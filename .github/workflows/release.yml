@@ -1,0 +1,82 @@
+name: Publish macOS release
+on:
+  workflow_run:
+    workflows: ['macOS tests']
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: cutline-release
+  cancel-in-progress: false
+jobs:
+  release:
+    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_repository.full_name == github.repository)
+    runs-on: macos-15
+    timeout-minutes: 60
+    permissions:
+      contents: write
+      actions: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
+      RELEASE_MODE: ${{ vars.RELEASE_MODE || 'signed' }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || 'main' }}
+          fetch-depth: 0
+      - name: Require successful main CI and an unpublished version
+        id: candidate
+        run: |
+          git fetch origin main
+          [[ "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)" ]] || { echo 'A newer main commit exists; skipping stale release.'; exit 0; }
+          python3 scripts/check-release-ci.py "$(git rev-parse HEAD)"
+          case "$RELEASE_MODE" in
+            signed) tag="v$(cat VERSION)" ;;
+            preview) tag="v$(cat VERSION)-preview.$(cat BUILD_NUMBER)" ;;
+            *) echo 'RELEASE_MODE must be signed or preview.' >&2; exit 1 ;;
+          esac
+          if gh release view "$tag" --json isDraft --jq .isDraft | grep -qx false; then
+            echo 'This version is already published. Bump VERSION and BUILD_NUMBER for another release.'
+            exit 0
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo 'publish=true' >> "$GITHUB_OUTPUT"
+      - name: Import Apple signing and notarization credentials
+        if: steps.candidate.outputs.publish == 'true' && env.RELEASE_MODE == 'signed'
+        env:
+          DEVELOPER_ID_P12_BASE64: ${{ secrets.DEVELOPER_ID_P12_BASE64 }}
+          DEVELOPER_ID_P12_PASSWORD: ${{ secrets.DEVELOPER_ID_P12_PASSWORD }}
+          NOTARY_API_KEY_P8: ${{ secrets.NOTARY_API_KEY_P8 }}
+          NOTARY_KEY_ID: ${{ secrets.NOTARY_KEY_ID }}
+          NOTARY_ISSUER_ID: ${{ secrets.NOTARY_ISSUER_ID }}
+          NOTARY_APPLE_ID: ${{ secrets.NOTARY_APPLE_ID }}
+          NOTARY_APP_PASSWORD: ${{ secrets.NOTARY_APP_PASSWORD }}
+        run: bash scripts/ci-signing.sh
+      - name: Build universal app, ZIP and DMG
+        if: steps.candidate.outputs.publish == 'true'
+        run: bash scripts/release.sh "$RELEASE_MODE"
+      - name: Sign and verify update feed
+        if: steps.candidate.outputs.publish == 'true'
+        env:
+          SPARKLE_ED_PRIVATE_KEY: ${{ secrets.SPARKLE_ED_PRIVATE_KEY }}
+        run: bash scripts/update-feed.sh '${{ steps.candidate.outputs.tag }}'
+      - name: Preserve verified release assets
+        if: steps.candidate.outputs.publish == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: macOS-release
+          path: release-assets/
+          if-no-files-found: error
+      - name: Publish release and advance signed feed
+        if: steps.candidate.outputs.publish == 'true'
+        run: bash scripts/publish-release.sh '${{ steps.candidate.outputs.tag }}'
+      - name: Remove temporary signing credentials
+        if: always() && env.RELEASE_MODE == 'signed'
+        run: |
+          security default-keychain -d user -s "$HOME/Library/Keychains/login.keychain-db" || true
+          security list-keychains -d user -s "$HOME/Library/Keychains/login.keychain-db" || true
+          security delete-keychain "$RUNNER_TEMP/cutline-signing.keychain-db" || true
+          rm -f "$RUNNER_TEMP/cutline-signing.p12" "$RUNNER_TEMP/cutline-notary.p8"

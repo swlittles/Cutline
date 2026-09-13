@@ -1,0 +1,15 @@
+#!/bin/sh
+# Test-only speech engine boundary. The app still extracts real audio with FFmpeg.
+set -eu
+mode=$(cat "$CUTLINE_TEST_ROOT/whisper-mode")
+if [ "$mode" = slow ]; then exec /bin/sleep 30; fi
+if [ "$mode" = failure ]; then echo 'Fixture speech engine failure' >&2; exit 7; fi
+while [ "$#" -gt 0 ]; do
+  if [ "$1" = '-of' ]; then shift; output="$1"; fi
+  shift
+done
+cat > "$output.srt" <<'SRT'
+1
+00:00:00,300 --> 00:00:01,400
+Local microphone caption.
+SRT

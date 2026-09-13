@@ -1,0 +1,15 @@
+.build/
+.swiftpm/
+dist/
+.DS_Store
+*.xcuserstate
+xcuserdata/
+test-results/
+release-build/
+release-assets/
+*.p12
+*.p8
+*.key
+.env*
+__pycache__/
+*.pyc

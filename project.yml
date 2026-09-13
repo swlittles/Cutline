@@ -1,0 +1,97 @@
+name: Cutline
+packages:
+  Sparkle:
+    url: https://github.com/sparkle-project/Sparkle
+    exactVersion: 2.9.6
+options:
+  bundleIdPrefix: studio.cutline
+  deploymentTarget:
+    macOS: '14.0'
+settings:
+  base:
+    SWIFT_VERSION: '5.10'
+    CODE_SIGN_IDENTITY: '-'
+    CODE_SIGN_STYLE: Manual
+    ENABLE_HARDENED_RUNTIME: NO
+    GENERATE_INFOPLIST_FILE: YES
+    MACOSX_DEPLOYMENT_TARGET: '14.0'
+targets:
+  CutlineCore:
+    type: framework
+    platform: macOS
+    sources: [Sources/CutlineCore]
+  Cutline:
+    type: application
+    platform: macOS
+    sources: [Sources/Cutline]
+    info:
+      path: Config/Info.plist
+      properties:
+        CFBundleDisplayName: Cutline Test Build
+        CFBundleShortVersionString: '0.2.0'
+        CFBundleVersion: '3'
+        NSPrincipalClass: NSApplication
+        UTExportedTypeDeclarations:
+          - UTTypeIdentifier: studio.cutline.project
+            UTTypeDescription: Cutline Project
+            UTTypeConformsTo: [public.json]
+            UTTypeTagSpecification:
+              public.filename-extension: [cutline]
+        CFBundleDocumentTypes:
+          - CFBundleTypeName: Cutline Project
+            CFBundleTypeRole: Editor
+            LSHandlerRank: Alternate
+            LSItemContentTypes: [studio.cutline.project]
+    settings:
+      PRODUCT_BUNDLE_IDENTIFIER: studio.cutline.editor.tests
+    dependencies:
+      - target: CutlineCore
+      - package: Sparkle
+  CutlineCoreTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources: [Tests/CutlineCoreTests]
+    dependencies:
+      - target: CutlineCore
+  CutlineAppTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - Tests/CutlineAppTests
+      - path: Tests/CutlineCoreTests/Fixtures
+        type: folder
+        buildPhase: resources
+    dependencies:
+      - target: Cutline
+      - target: CutlineCore
+  CutlineUITests:
+    type: bundle.ui-testing
+    platform: macOS
+    sources:
+      - path: Tests/CutlineUITests
+        excludes: [Helpers]
+      - path: Tests/CutlineUITests/Helpers
+        type: folder
+        buildPhase: resources
+      - path: Tests/CutlineCoreTests/Fixtures
+        type: folder
+        buildPhase: resources
+    settings:
+      TEST_TARGET_NAME: Cutline
+    dependencies:
+      - target: Cutline
+      - target: CutlineCore
+schemes:
+  Cutline:
+    build:
+      targets:
+        Cutline: all
+    test:
+      gatherCoverageData: true
+      targets:
+        - name: CutlineCoreTests
+          parallelizable: false
+        - name: CutlineAppTests
+          parallelizable: false
+        - name: CutlineUITests
+          parallelizable: false
