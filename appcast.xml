@@ -1,0 +1,34 @@
+<?xml version="1.0" standalone="yes"?><!-- sparkle-sign-warning:
+IMPORTANT: This file was signed by Sparkle. Any modifications to this file requires re-signing this file with generate_appcast or sign_update! The signed signature will be embedded at the end of this file.
+--><rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
+    <channel>
+        <title>Cutline</title>
+        <item>
+            <title>0.3.0</title>
+            <pubDate>Sun, 13 Sep 2026 05:58:30 +0000</pubDate>
+            <sparkle:version>4</sparkle:version>
+            <sparkle:shortVersionString>0.3.0</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <description sparkle:format="markdown"><![CDATA[# Cutline 0.3.0
+
+First public macOS distribution of Cutline, an open-source video editor for game streamers.
+
+- Native timeline editing, video/audio layers, transform and color controls, project recovery, and MP4 export.
+- Local automatic captions with whisper.cpp and FFmpeg; editable captions and SRT/WebVTT exchange.
+- Optional OpenRouter editing assistance and generated-media workflows.
+- Sparkle updates signed with a dedicated Cutline key and hosted on GitHub.
+- Separate Cutline Dev app for local work; release updates never replace it.
+- Extensive native UI, app-state and actual-media tests.
+
+Requires macOS 14 or later. Universal binary includes Apple silicon and Intel; Intel runtime behavior has not been validated on physical hardware.
+Install FFmpeg and whisper.cpp separately for transcription and still-image conversion (`brew install ffmpeg whisper-cpp`). Models download from the Captions panel.
+
+Developer-preview releases are ad-hoc signed and not notarized by Apple. Stable releases require Developer ID signing and notarization. Check the release tag and release.json for the artifact's mode. Cutline is an early development version and does not yet have full CapCut parity.
+]]></description>
+            <enclosure url="https://github.com/swlittles/Cutline/releases/download/v0.3.0-preview.4/Cutline-0.3.0-preview.4-macos-universal.zip" length="3100140" type="application/octet-stream" sparkle:edSignature="YoegG97bgMwvmBFwxTerj6jKel0pDgs/G7P0dQtPkIMv4wtyJWh11C+bIOFQxGvzChSo3YrmEyQLsPZgIso8BQ=="></enclosure>
+        </item>
+    </channel>
+</rss><!-- sparkle-signatures:
+edSignature: WXZgVFqfm6jIVZDFGBfAxEaYdulse84zKohoOdLwkr9064Kqp68rmwcwJxzqlYQieMAtQ6VC+f+0z0ZbFfxZDQ==
+length: 2351
+-->
