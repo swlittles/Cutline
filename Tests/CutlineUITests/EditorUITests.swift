@@ -52,7 +52,14 @@ import CutlineCore
         XCTAssertEqual(XCTWaiter.wait(for: [expectation], timeout: timeout), .completed, "Expected \(id) = \(text), got \(element.value ?? element.label)")
     }
     func edit(_ field: XCUIElement, _ value: String, submit: Bool = false) {
-        if !field.exists { XCTAssertTrue(field.waitForExistence(timeout: 5)) }; if let panel = panelContaining(field) { reveal(field, panel: panel) }; field.click(); field.typeKey("a", modifierFlags: .command); if value.isEmpty { field.typeKey(.delete, modifierFlags: []) } else { field.typeText(value) }
+        if !field.exists { XCTAssertTrue(field.waitForExistence(timeout: 5)) }
+        if let panel = panelContaining(field) { reveal(field, panel: panel) }
+        // Select inside the editor explicitly. On macOS a single click following
+        // a scroll/layout change can activate the control without editing it.
+        field.doubleClick()
+        field.typeKey("a", modifierFlags: .command)
+        if value.isEmpty { field.typeText(XCUIKeyboardKey.delete.rawValue) }
+        else { field.typeText(value) }
         if submit { field.typeKey(.return, modifierFlags: []) }
     }
     func tab(_ name: String) { app.radioButtons[name].click() }
@@ -135,6 +142,7 @@ import CutlineCore
         reveal(app.descendants(matching: .any)["caption.text.\(id)"].firstMatch, panel: "captions.scroll"); edit(app.descendants(matching: .any)["caption.text.\(id)"].firstMatch, "Push together!")
         waitEnabled(app.buttons["caption.apply.\(id)"]); tapInPanel(app.buttons["caption.apply.\(id)"]); assertLabel("captions.count", "0 CAPTIONS")
         edit(app.textFields["Search the transcript"], "")
+        XCTAssertEqual(app.textFields["Search the transcript"].value as? String, "")
         assertLabel("captions.count", "2 CAPTIONS")
         assertLabel("timeline.count", "1 clips")
         XCTAssertEqual(try save().captionTrack!.cues[0].text, "Push together!")

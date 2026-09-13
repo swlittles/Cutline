@@ -18,7 +18,7 @@ suite="${1:-all}"
 selection=(-configuration Debug)
 case "$suite" in
   all) ;;
-  smoke) selection+=(-only-testing:CutlineUITests/EditorUITests/testCaptionTextSearchEditAndDelete -only-testing:CutlineUITests/EditorUITests/testSplitDuplicateDeleteUndoRedo) ;;
+  smoke) selection+=(-only-testing:CutlineUITests/EditorUITests/testCaptionTextSearchEditAndDelete -only-testing:CutlineUITests/EditorUITests/testSplitDuplicateDeleteUndoRedo -only-testing:CutlineUITests/EditorUITests/testTrimAndMutePersist -only-testing:CutlineUITests/EditorUITests/testPlaybackAdvancesAndPauses -test-iterations 3) ;;
   ui) selection+=(-only-testing:CutlineUITests) ;;
   unit) selection+=(-only-testing:CutlineCoreTests -only-testing:CutlineAppTests) ;;
   *) echo 'Usage: scripts/test-all.sh [all|ui|unit|smoke]' >&2; exit 2 ;;

@@ -60,10 +60,13 @@ final class EditorStore: ObservableObject {
 
     init() {
         player.actionAtItemEnd = .pause
-        timeObserver = player.addPeriodicTimeObserver(forInterval: CMTime(seconds: 1.0 / 30, preferredTimescale: 600), queue: .main) { [weak self] time in
+        timeObserver = player.addPeriodicTimeObserver(forInterval: CMTime(seconds: 1.0 / 30, preferredTimescale: 600), queue: .main) { [weak self] _ in
             Task { @MainActor in
-                guard let self else { return }
-                self.playhead = time.seconds.isFinite ? time.seconds : 0
+                guard let self, self.isPlaying else { return }
+                // The observer's timestamp may be stale by the time this task runs.
+                // Paused playback and explicit seeks own the displayed playhead.
+                let current = self.player.currentTime().seconds
+                self.playhead = current.isFinite ? current : 0
                 self.isPlaying = self.player.rate != 0
             }
         }
@@ -174,7 +177,11 @@ final class EditorStore: ObservableObject {
     }
     func togglePlayback() {
         guard !isBuilding, render != nil else { return }
-        if player.rate != 0 { player.pause(); isPlaying = false }
+        if player.rate != 0 {
+            player.pause(); isPlaying = false
+            let current = player.currentTime().seconds
+            if current.isFinite { playhead = current }
+        }
         else {
             if playhead >= project.duration - 0.05 { seek(0) }
             player.play(); isPlaying = true

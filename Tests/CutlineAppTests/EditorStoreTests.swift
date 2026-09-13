@@ -169,6 +169,20 @@ import CutlineCore
         try await until { self.store.project.music?.count == 1 }
         XCTAssertEqual(store.project.music?[0].start, 1)
     }
+    func testPauseAndSeekRemainStableAfterQueuedPlayerCallbacks() async throws {
+        seed(); store.rebuild()
+        try await until { !self.store.isBuilding }
+        store.togglePlayback()
+        try await until { self.store.playhead > 0.1 }
+        store.togglePlayback()
+        XCTAssertFalse(store.isPlaying)
+        let paused = store.playhead
+        try await Task.sleep(nanoseconds: 150_000_000)
+        XCTAssertEqual(store.playhead, paused)
+        store.seek(2)
+        try await Task.sleep(nanoseconds: 150_000_000)
+        XCTAssertEqual(store.playhead, 2)
+    }
     func testPreviewBuildGatesExportAndLoadsPlayer() async throws {
         seed(); store.rebuild(); XCTAssertFalse(store.canExport)
         try await until { !self.store.isBuilding }; XCTAssertTrue(store.canExport); XCTAssertNotNil(store.player.currentItem)
