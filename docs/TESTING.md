@@ -1,12 +1,13 @@
 # Automated testing
 
-Cutline has 146 tests across three layers: 76 core/media tests, 29 hosted application tests, and 41 native UI workflows. `CutlineCoreTests` tests project invariants, subtitle/timeline transforms, provider transport, subprocesses, real AVFoundation composition and pixel output, and atomic export. `CutlineAppTests` hosts the actual application and tests EditorStore state, asynchronous work, undo/redo, persistence, and recovery. `CutlineUITests` drives the compiled macOS app through XCUITest, including native file dialogs, and reads the resulting project/media files to verify edits.
+Cutline has 155 XCTest cases across three layers: 79 core/media tests, 34 hosted application tests, and 42 native UI workflows, plus 14 Python release-tooling tests. `CutlineCoreTests` tests project invariants, subtitle/timeline transforms, provider transport, subprocesses, real AVFoundation composition and pixel output, and atomic export. `CutlineAppTests` hosts the actual application and tests EditorStore state, asynchronous work, undo/redo, persistence, and recovery. `CutlineUITests` drives the compiled macOS app through XCUITest, including native file dialogs, and reads the resulting project/media files to verify edits.
 
 ## Run
 
 Use a logged-in, unlocked Mac desktop with full Xcode. XCUITest needs foreground control; avoid using the keyboard/mouse while it runs. Install `ffmpeg` and optionally `xcodegen` with Homebrew.
 
 ```sh
+python3 -m unittest discover -s Tests/ReleaseTests -v  # Release validation and feed publication
 ./scripts/test.sh          # Fast core and actual-media integration tests
 ./scripts/test-all.sh unit # Core plus hosted EditorStore tests
 ./scripts/test-ui.sh       # Native UI workflows
