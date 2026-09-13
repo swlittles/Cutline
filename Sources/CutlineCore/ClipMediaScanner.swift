@@ -19,6 +19,7 @@ public enum ClipMediaScanner {
         var audio: [ClipAudioSample] = [], motion: [ClipMotionSample] = [], evidence = markers.filter { $0.signal == .marker }
         var warnings = ["Activity scores are measurements, not judgments of clip quality. Review each clip."]
         let tracks = try await asset.loadTracks(withMediaType: .audio)
+        guard tracks.count <= 64, settings.outputAudioTrack < max(1, tracks.count) else { throw EditError.invalid("Choose an available export audio track (up to 64 tracks supported).") }
         if settings.audioEnabled {
             guard tracks.indices.contains(settings.audioTrack) else { throw EditError.invalid("The selected audio track is unavailable. Choose an existing track or disable audio detection.") }
             audio = try await readAudio(asset: asset, track: tracks[settings.audioTrack], duration: duration) { progress(ClipScanProgress($0 * 0.35, "Measuring audio track \(settings.audioTrack + 1)…")) }

@@ -13,7 +13,7 @@ public enum AutoClipBatch {
         let encoder = JSONEncoder(); encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         for (index, candidate) in candidates.enumerated() {
             try Task.checkCancellation()
-            var project = try AutoClipRules.project(for: candidate, media: report.media)
+            var project = try AutoClipRules.project(for: candidate, media: report.media, outputAudioTrack: report.settings.outputAudioTrack)
             project.options = options
             let stem = String(format: "%02d", index + 1) + " - " + candidate.title.replacingOccurrences(of: ":", with: "-")
             let render = try await CompositionEngine.build(project)

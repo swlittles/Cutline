@@ -220,3 +220,15 @@ extension AutoClipTests {
         XCTAssertEqual(try Data(contentsOf: sentinel), Data("keep".utf8))
     }
 }
+
+extension AutoClipTests {
+    func testOBSExportKeepsAnalysisTrackIndependentAndAvoidsDoubleMixing() throws {
+        var media = MediaItem(url: Fixtures.url("autoclip.mp4"), duration: 12); media.audioTrackCount = 2
+        let c = AutoClipCandidate(id: "one", start: 4, end: 8, score: 1, evidence: [])
+        let audience = try AutoClipRules.project(for: c, media: media)
+        XCTAssertEqual(audience.clips[0].adjustments?.audioGains, ["0": 1, "1": 0])
+        let mic = try AutoClipRules.project(for: c, media: media, outputAudioTrack: 1)
+        XCTAssertEqual(mic.clips[0].adjustments?.audioGains, ["0": 0, "1": 1])
+        XCTAssertThrowsError(try AutoClipRules.project(for: c, media: media, outputAudioTrack: 2))
+    }
+}

@@ -71,6 +71,10 @@ struct AutoClipPanel: View {
                 }.accessibilityIdentifier("clips.track")
                 Text("Choose your isolated microphone track for reactions, or game audio for combat activity.").foregroundStyle(Studio.muted)
             }
+            Picker("Export audio", selection: $store.clipSettings.outputAudioTrack) {
+                ForEach(0..<max(1, store.clipMedia?.audioTrackCount ?? 1), id: \.self) { Text("Track \($0 + 1)").tag($0) }
+            }.accessibilityIdentifier("clips.outputTrack")
+            Text("Export your audience mix (usually Track 1), separately from the track used to detect activity.").foregroundStyle(Studio.muted)
             Toggle("Sustained frame changes", isOn: $store.clipSettings.visionEnabled).accessibilityIdentifier("clips.vision")
             if store.clipSettings.audioEnabled && store.clipSettings.visionEnabled {
                 Toggle("Require audio and motion together", isOn: $store.clipSettings.requireBoth).accessibilityIdentifier("clips.both")

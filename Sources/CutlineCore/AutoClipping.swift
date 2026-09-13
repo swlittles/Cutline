@@ -32,6 +32,7 @@ public struct AutoClipSettings: Codable, Equatable, Sendable {
     public var requireBoth = true
     /// Zero-based index into the source's audio tracks, never an implicit mix.
     public var audioTrack = 0
+    public var outputAudioTrack = 0
     public var audioRiseDB = 8.0
     public var audioFloorDB = -35.0
     public var motionThreshold = 0.07
@@ -57,7 +58,7 @@ public struct AutoClipSettings: Codable, Equatable, Sendable {
     }
     public func validate() throws {
         guard audioEnabled || visionEnabled || useOCR else { throw EditError.invalid("Enable audio, frame changes, or HUD OCR.") }
-        guard audioTrack >= 0, audioTrack < 64, (1...5).contains(sampleFPS), (3...30).contains(audioRiseDB), (-80...0).contains(audioFloorDB),
+        guard audioTrack >= 0, audioTrack < 64, outputAudioTrack >= 0, outputAudioTrack < 64, (1...5).contains(sampleFPS), (3...30).contains(audioRiseDB), (-80...0).contains(audioFloorDB),
               (0.01...0.4).contains(motionThreshold), (0...30).contains(lead), (0...30).contains(tail),
               (1...30).contains(encounterGap), (3...180).contains(maxDuration), lead + tail < maxDuration,
               (1...100).contains(maxClips), (1...10).contains(minimumKills), hud.valid, motionRegion.valid else {
@@ -202,10 +203,15 @@ public enum AutoClipRules {
         while low < high { let mid = (low + high) / 2; if events[mid].time < time - 2 { low = mid + 1 } else { high = mid } }
         return low < events.count && events[low].time <= time + 2
     }
-    public static func project(for candidate: AutoClipCandidate, media: MediaItem) throws -> EditProject {
+    public static func project(for candidate: AutoClipCandidate, media: MediaItem, outputAudioTrack: Int = 0) throws -> EditProject {
         guard candidate.start.isFinite, candidate.end.isFinite, candidate.start >= 0, candidate.end <= media.duration, candidate.end > candidate.start else { throw EditError.invalid("Invalid automatic clip range.") }
+        guard (0..<64).contains(outputAudioTrack), outputAudioTrack < max(1, media.audioTrackCount ?? 64) else { throw EditError.invalid("Choose an available export audio track.") }
         var project = EditProject(); project.name = candidate.title; project.media = [media]
         project.clips = [TimelineClip(mediaID: media.id, sourceIn: candidate.start, sourceOut: candidate.end)]
+        var adjustments = ClipAdjustments()
+        // OBS audience mix and isolated tracks often contain the same sound. Export exactly one.
+        adjustments.audioGains = Dictionary(uniqueKeysWithValues: (0..<max(1, media.audioTrackCount ?? 64)).map { (String($0), $0 == outputAudioTrack ? 1.0 : 0.0) })
+        project.clips[0].adjustments = adjustments
         try project.validate(); return project
     }
 }

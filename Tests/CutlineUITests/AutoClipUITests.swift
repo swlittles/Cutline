@@ -45,8 +45,8 @@ extension EditorUITests {
     }
     func testAutomaticClipsQuietTrackProducesEmptyResult() throws {
         try prepareAutoClipRecording(); launch(); tab("Clips")
-        app.checkBoxes["clips.vision"].click()
-        app.popUpButtons["clips.track"].click(); app.menuItems["Track 2"].click()
+        tapInPanel(app.checkBoxes["clips.vision"])
+        tapInPanel(app.popUpButtons["clips.track"]); app.menuItems["Track 2"].click()
         let scan = app.buttons["clips.scan"]; reveal(scan, panel: "clips.scroll"); scan.click()
         assertLabel("clips.status", "No clips met these rules. Try another track or adjust the thresholds.", timeout: 30)
         XCTAssertFalse(app.buttons["clips.export"].exists)

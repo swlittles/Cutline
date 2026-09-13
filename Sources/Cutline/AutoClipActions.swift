@@ -45,7 +45,7 @@ extension EditorStore {
     func addAutoClip(_ candidate: AutoClipCandidate) {
         guard clipSourceUnchanged, let media = clipReport?.media else { error = "The recording changed. Scan it again."; return }
         do {
-            let new = try AutoClipRules.project(for: candidate, media: media)
+            let new = try AutoClipRules.project(for: candidate, media: media, outputAudioTrack: clipReport?.settings.outputAudioTrack ?? 0)
             let clip = new.clips[0]
             commit { $0.clips.append(clip) }; selectedClipID = clip.id; seek(project.start(of: clip.id))
             status = "Added automatic clip to the timeline. Undo restores it."
