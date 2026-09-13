@@ -18,9 +18,10 @@ suite="${1:-all}"
 selection=(-configuration Debug)
 case "$suite" in
   all) ;;
+  smoke) selection+=(-only-testing:CutlineUITests/EditorUITests/testCaptionTextSearchEditAndDelete -only-testing:CutlineUITests/EditorUITests/testSplitDuplicateDeleteUndoRedo) ;;
   ui) selection+=(-only-testing:CutlineUITests) ;;
   unit) selection+=(-only-testing:CutlineCoreTests -only-testing:CutlineAppTests) ;;
-  *) echo 'Usage: scripts/test-all.sh [all|ui|unit]' >&2; exit 2 ;;
+  *) echo 'Usage: scripts/test-all.sh [all|ui|unit|smoke]' >&2; exit 2 ;;
 esac
 result_dir="${CUTLINE_RESULTS_DIR:-$PWD/.build/test-results/$(date +%Y%m%d-%H%M%S)-$suite}"
 mkdir -p "$result_dir"

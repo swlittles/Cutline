@@ -4,6 +4,7 @@ import CutlineCore
 struct TimelineView: View {
     @EnvironmentObject var store: EditorStore
     @State private var zoom = 1.0
+    @FocusState private var hasKeyboardFocus: Bool
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 16) {
@@ -100,7 +101,12 @@ struct TimelineView: View {
                     }
                 }
             }
-        }.background(Studio.panel).overlay(alignment: .top) { Rectangle().fill(Studio.line).frame(height: 1) }
+        }
+        // Delete belongs to the focused timeline. A global menu key equivalent can
+        // steal it from SwiftUI text fields before their native editor receives it.
+        .focusable().focused($hasKeyboardFocus)
+        .onDeleteCommand { store.deleteFromKeyboard() }
+        .background(Studio.panel).overlay(alignment: .top) { Rectangle().fill(Studio.line).frame(height: 1) }
     }
     private func tool(_ icon: String, _ help: String, _ action: @escaping () -> Void) -> some View {
         Button(action: action) { Image(systemName: icon).font(.system(size: 12)).frame(width: 18, height: 24) }.buttonStyle(.plain).help(help).accessibilityIdentifier("timeline.\(icon)")
@@ -151,14 +157,14 @@ struct TimelineView: View {
                         })
                 }
             }
-            .padding(.trailing, 2).contentShape(Rectangle()).onTapGesture { store.select(clip) }.accessibilityElement(children: .combine).accessibilityIdentifier("clip.\(clip.id)")
+            .padding(.trailing, 2).contentShape(Rectangle()).onTapGesture { hasKeyboardFocus = true; store.select(clip) }.accessibilityElement(children: .combine).accessibilityIdentifier("clip.\(clip.id)")
             .draggable(clip.id.uuidString)
             .dropDestination(for: String.self) { values, _ in
                 guard let value = values.first, let id = UUID(uuidString: value) else { return false }
                 store.moveClip(id, before: clip.id); return true
             }
             .contextMenu {
-                Button("Select") { store.select(clip) }
+                Button("Select") { hasKeyboardFocus = true; store.select(clip) }
                 Button("Duplicate") { store.selectedClipID = clip.id; store.duplicate() }
                 Button("Remove") { store.selectedClipID = clip.id; store.deleteSelected() }
             }

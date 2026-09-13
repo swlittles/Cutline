@@ -99,7 +99,8 @@ import CutlineCore
         XCTAssertEqual(try EditProject.read(from: root.appendingPathComponent("Saved copy.cutline")).captionTrack?.cues.count, 2)
     }
     func testSplitDuplicateDeleteUndoRedo() throws {
-        launch(); app.typeKey(.rightArrow, modifierFlags: [])
+        launch(); app.descendants(matching: .any)["clip.\(project.clips[0].id)"].firstMatch.click()
+        app.typeKey(.rightArrow, modifierFlags: [])
         app.typeKey(.leftArrow, modifierFlags: .option)
         app.typeKey("b", modifierFlags: .command)
         // A split closer than 100 ms to an edge is rejected.
@@ -135,6 +136,7 @@ import CutlineCore
         waitEnabled(app.buttons["caption.apply.\(id)"]); tapInPanel(app.buttons["caption.apply.\(id)"]); assertLabel("captions.count", "0 CAPTIONS")
         edit(app.textFields["Search the transcript"], "")
         assertLabel("captions.count", "2 CAPTIONS")
+        assertLabel("timeline.count", "1 clips")
         XCTAssertEqual(try save().captionTrack!.cues[0].text, "Push together!")
         tapInPanel(app.buttons["caption.delete.\(id)"]); assertLabel("captions.count", "1 CAPTIONS")
         app.typeKey("z", modifierFlags: .command); assertLabel("captions.count", "2 CAPTIONS")
