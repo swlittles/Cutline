@@ -16,7 +16,7 @@ extension EditorUITests {
     func panelContaining(_ element: XCUIElement) -> String? {
         guard element.exists, app.sheets.count == 0, app.dialogs.count == 0 else { return nil }
         let x = element.frame.midX
-        return ["inspector.scroll", "captions.scroll", "ai.scroll", "layers.scroll"].first {
+        return ["inspector.scroll", "captions.scroll", "ai.scroll", "layers.scroll", "clips.scroll"].first {
             let panel = app.scrollViews[$0]
             return panel.exists && x >= panel.frame.minX && x <= panel.frame.maxX
         }

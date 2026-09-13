@@ -8,6 +8,19 @@ final class EditorStore: ObservableObject {
     @Published var visibleCaptions: [ProjectedCaption] = []
     @Published var aiSectionCount = 0
     @Published var workspace = "Media"
+    @Published var clipSettings = AutoClipSettings()
+    @Published var clipMediaID: UUID?
+    @Published var clipReport: AutoClipReport?
+    @Published var selectedAutoClips = Set<String>()
+    @Published var isScanningClips = false
+    @Published var isExportingClips = false
+    @Published var clipProgress = 0.0
+    @Published var clipMessage = "Choose a recording to find clips locally."
+    @Published var clipOutput: URL?
+    var clipTask: Task<Void, Never>?
+    var clipExportTask: Task<Void, Never>?
+    var clipJobID = UUID()
+    var clipProfiles: [String: AutoClipSettings] = [:]
     @Published var project = EditProject()
     @Published var isTranscribing = false
     @Published var transcriptionProgress = 0.0
@@ -59,6 +72,8 @@ final class EditorStore: ObservableObject {
     var canExport: Bool { render != nil && !isBuilding && !isExporting && !project.clips.isEmpty }
 
     init() {
+        if let data = try? Data(contentsOf: LocalTools.support.appendingPathComponent("autoclip-profiles.json")), let profiles = try? JSONDecoder().decode([String: AutoClipSettings].self, from: data) { clipProfiles = profiles }
+        if let saved = clipProfiles["last"] { clipSettings = saved }
         player.actionAtItemEnd = .pause
         timeObserver = player.addPeriodicTimeObserver(forInterval: CMTime(seconds: 1.0 / 30, preferredTimescale: 600), queue: .main) { [weak self] _ in
             Task { @MainActor in

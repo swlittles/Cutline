@@ -67,9 +67,10 @@ struct EditorView: View {
     private var library: some View {
         VStack(spacing: 0) {
             Picker("Workspace", selection: $store.workspace) {
-                ForEach(["Media", "Captions", "AI", "Layers"], id: \.self) { Text($0).tag($0) }
+                ForEach(["Media", "Clips", "Captions", "AI", "Layers"], id: \.self) { Text($0).tag($0) }
             }.pickerStyle(.segmented).labelsHidden().padding(12)
             switch store.workspace {
+            case "Clips": AutoClipPanel()
             case "Captions": CaptionPanel()
             case "AI": AIPanel()
             case "Layers": LayersPanel()
@@ -115,6 +116,7 @@ struct EditorView: View {
                             .contextMenu {
                                 Button("Add to timeline") { store.add(item) }
                                 Button("Add as facecam / overlay") { store.addOverlay(item) }.disabled(store.project.clips.isEmpty)
+                                Button("Find automatic clips") { store.clipMediaID = item.id; store.workspace = "Clips" }
                                 Button("Transcribe recording") { store.transcriptionMediaID = item.id; store.workspace = "Captions" }
                                 Button("Relink source…") { store.relink(item) }
                             }

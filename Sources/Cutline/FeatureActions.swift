@@ -29,7 +29,7 @@ extension EditorStore {
         } catch { self.error = error.localizedDescription }
     }
     func resetJobs() {
-        projectEpoch = UUID(); transcriptionTask?.cancel(); assistantTask?.cancel(); autosaveTask?.cancel()
+        resetAutoClips(); projectEpoch = UUID(); transcriptionTask?.cancel(); assistantTask?.cancel(); autosaveTask?.cancel()
         isTranscribing = false; isThinking = false; aiProposal = nil; aiSnapshot = nil; transcriptionMediaID = nil
     }
     func downloadSpeechModel() {
