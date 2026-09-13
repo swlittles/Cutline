@@ -48,7 +48,9 @@ extension EditorUITests {
     }
     func testIndependentOBSTrackGainPersists() throws {
         launch(); let tracks = app.disclosureTriangles["Source audio tracks (2)"]; reveal(tracks, panel: "inspector.scroll"); toggleDisclosure(tracks.label)
-        let gain = app.sliders["audio.gain.0"]; reveal(gain, panel: "inspector.scroll"); gain.adjust(toNormalizedSliderPosition: 0)
+        let gain = app.sliders["audio.gain.0"]; reveal(gain, panel: "inspector.scroll")
+        // Drag beyond the endpoint: normalized slider adjustment is approximate on macOS 15.
+        gain.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).click(forDuration: 0.2, thenDragTo: gain.coordinate(withNormalizedOffset: CGVector(dx: -0.1, dy: 0.5)))
         let apply = app.buttons["Apply adjustments"]; reveal(apply, panel: "inspector.scroll"); apply.click()
         let result = try save(); XCTAssertEqual(result.clips[0].adjustments?.audioGains["0"], 0)
         XCTAssertEqual(result.clips[0].adjustments?.audioGains["1"] ?? 1, 1)
