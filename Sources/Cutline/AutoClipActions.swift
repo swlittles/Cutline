@@ -7,11 +7,11 @@ extension EditorStore {
     var clipSourceUnchanged: Bool { guard let report = clipReport else { return false }; return project.media.contains(report.media) }
     func selectClipGame(_ game: ClipGame) {
         clipProfiles[clipSettings.game.rawValue] = clipSettings
-        clipSettings = clipProfiles[game.rawValue] ?? .preset(game)
+        clipSettings = clipProfiles[game.rawValue] ?? .preset(game); clipSettings.hudCalibrated = false
     }
     func resetAutoClips() {
         clipJobID = UUID(); clipTask?.cancel(); clipExportTask?.cancel()
-        isScanningClips = false; isExportingClips = false; clipReport = nil; selectedAutoClips = []; clipMediaID = nil; clipOutput = nil
+        isScanningClips = false; isExportingClips = false; clipReport = nil; selectedAutoClips = []; clipMediaID = nil; clipOutput = nil; clipSettings.hudCalibrated = false
     }
     func scanAutoClips() {
         guard !isScanningClips, !isExportingClips, let media = clipMedia else { return }
@@ -27,7 +27,7 @@ extension EditorStore {
         clipTask = Task {
             do {
                 let report = try await ClipMediaScanner.scan(media: media, settings: settings, markers: markers) { [weak self] update in
-                    Task { @MainActor in guard let self, self.clipJobID == token else { return }; self.clipProgress = update.fraction; self.clipMessage = update.message }
+                    Task { @MainActor in guard let self, self.clipJobID == token, self.isScanningClips else { return }; self.clipProgress = update.fraction; self.clipMessage = update.message }
                 }
                 try Task.checkCancellation()
                 guard clipJobID == token else { return }
@@ -66,7 +66,7 @@ extension EditorStore {
         clipExportTask = Task {
             do {
                 let output = try await AutoClipBatch.export(report: report, candidates: candidates, to: folder, options: options) { [weak self] update in
-                    Task { @MainActor in guard let self, self.clipJobID == token else { return }; self.clipProgress = update.fraction; self.clipMessage = update.message }
+                    Task { @MainActor in guard let self, self.clipJobID == token, self.isExportingClips else { return }; self.clipProgress = update.fraction; self.clipMessage = update.message }
                 }
                 guard clipJobID == token else { return }
                 clipOutput = output; clipMessage = "Exported \(candidates.count) \(candidates.count == 1 ? "clip" : "clips")."

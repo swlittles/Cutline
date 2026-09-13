@@ -95,6 +95,8 @@ public enum ClipMediaScanner {
                 guard let format = CMSampleBufferGetFormatDescription(buffer), let asbd = CMAudioFormatDescriptionGetStreamBasicDescription(format)?.pointee,
                       asbd.mSampleRate > 0, asbd.mChannelsPerFrame > 0, let block = CMSampleBufferGetDataBuffer(buffer) else { throw EditError.invalid("Unsupported decoded PCM layout.") }
                 let size = CMBlockBufferGetDataLength(block)
+                guard size > 0 else { return }
+                guard size % MemoryLayout<Float>.size == 0 else { throw EditError.invalid("Invalid PCM sample buffer size.") }
                 var floats = [Float](repeating: 0, count: size / MemoryLayout<Float>.size)
                 let status = floats.withUnsafeMutableBytes { CMBlockBufferCopyDataBytes(block, atOffset: 0, dataLength: size, destination: $0.baseAddress!) }
                 guard status == kCMBlockBufferNoErr else { throw EditError.invalid("Cannot read decoded audio samples.") }

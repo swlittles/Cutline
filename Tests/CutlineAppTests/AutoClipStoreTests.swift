@@ -53,3 +53,11 @@ extension EditorStoreTests {
         XCTAssertEqual(store.clipMessage, "Exported 1 clip.")
     }
 }
+
+extension EditorStoreTests {
+    func testAutomaticCalibrationClearsOnSourceProfileAndProjectChanges() {
+        store.clipSettings.hudCalibrated = true; store.clipMediaID = UUID(); XCTAssertFalse(store.clipSettings.hudCalibrated)
+        store.clipSettings.hudCalibrated = true; store.selectClipGame(.valorant); XCTAssertFalse(store.clipSettings.hudCalibrated)
+        store.clipSettings.hudCalibrated = true; store.resetJobs(); XCTAssertFalse(store.clipSettings.hudCalibrated)
+    }
+}

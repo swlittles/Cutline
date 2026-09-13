@@ -9,7 +9,7 @@ final class EditorStore: ObservableObject {
     @Published var aiSectionCount = 0
     @Published var workspace = "Media"
     @Published var clipSettings = AutoClipSettings()
-    @Published var clipMediaID: UUID?
+    @Published var clipMediaID: UUID? { didSet { if clipMediaID != oldValue { clipSettings.hudCalibrated = false } } }
     @Published var clipReport: AutoClipReport?
     @Published var selectedAutoClips = Set<String>()
     @Published var isScanningClips = false
@@ -73,7 +73,7 @@ final class EditorStore: ObservableObject {
 
     init() {
         if let data = try? Data(contentsOf: LocalTools.support.appendingPathComponent("autoclip-profiles.json")), let profiles = try? JSONDecoder().decode([String: AutoClipSettings].self, from: data) { clipProfiles = profiles }
-        if let saved = clipProfiles["last"] { clipSettings = saved }
+        if let saved = clipProfiles["last"] { clipSettings = saved }; clipSettings.hudCalibrated = false
         player.actionAtItemEnd = .pause
         timeObserver = player.addPeriodicTimeObserver(forInterval: CMTime(seconds: 1.0 / 30, preferredTimescale: 600), queue: .main) { [weak self] _ in
             Task { @MainActor in

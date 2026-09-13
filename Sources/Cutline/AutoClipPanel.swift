@@ -50,6 +50,7 @@ struct AutoClipPanel: View {
                 }
             }.font(.system(size: 11)).padding(16)
         }.accessibilityIdentifier("clips.scroll")
+            .onChange(of: store.clipMedia?.id) { _, _ in store.clipSettings.hudCalibrated = false }
             .sheet(item: $preview) { candidate in
                 if let media = store.clipReport?.media { ClipPreviewSheet(media: media, candidate: candidate) }
             }
