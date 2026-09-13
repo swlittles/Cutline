@@ -54,9 +54,7 @@ import CutlineCore
     func edit(_ field: XCUIElement, _ value: String, submit: Bool = false) {
         if !field.exists { XCTAssertTrue(field.waitForExistence(timeout: 5)) }
         if let panel = panelContaining(field) { reveal(field, panel: panel) }
-        // Select inside the editor explicitly. On macOS a single click following
-        // a scroll/layout change can activate the control without editing it.
-        field.doubleClick()
+        field.click()
         field.typeKey("a", modifierFlags: .command)
         if value.isEmpty { field.typeText(XCUIKeyboardKey.delete.rawValue) }
         else { field.typeText(value) }

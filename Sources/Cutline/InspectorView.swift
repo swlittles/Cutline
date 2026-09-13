@@ -56,6 +56,7 @@ struct ClipInspector: View {
     @State private var start = 0.0
     @State private var end = 1.0
     @State private var volume = 1.0
+    @FocusState private var focusedTrim: String?
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("SELECTED CLIP").font(.system(size: 9)).tracking(1.2).foregroundStyle(Studio.muted)
@@ -99,6 +100,8 @@ struct ClipInspector: View {
         HStack {
             Text(label).foregroundStyle(Studio.muted).frame(width: 28, alignment: .leading)
             TextField(label, value: value, format: .number.precision(.fractionLength(2))).textFieldStyle(.roundedBorder).accessibilityIdentifier("trim.\(label)").onSubmit(apply)
+                .focused($focusedTrim, equals: label)
+                .simultaneousGesture(TapGesture().onEnded { focusedTrim = label })
             Text("s").foregroundStyle(Studio.muted)
         }.font(.system(size: 11, design: .monospaced))
     }
