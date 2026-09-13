@@ -33,7 +33,7 @@ extension EditorStore {
                 guard clipJobID == token else { return }
                 guard project.media.contains(media) else { throw EditError.invalid("The source changed while scanning. Scan the recording again.") }
                 clipReport = report; selectedAutoClips = Set(report.candidates.map(\.id))
-                clipMessage = report.candidates.isEmpty ? "No clips met these rules. Try another track or adjust the thresholds." : "Found \(report.candidates.count) clips to review."
+                clipMessage = report.candidates.isEmpty ? "No clips met these rules. Try another track or adjust the thresholds." : "Found \(report.candidates.count) \(report.candidates.count == 1 ? "clip" : "clips") to review."
             } catch {
                 guard clipJobID == token else { return }
                 clipMessage = Task.isCancelled ? "Scan cancelled." : "Scan failed."
@@ -69,7 +69,7 @@ extension EditorStore {
                     Task { @MainActor in guard let self, self.clipJobID == token else { return }; self.clipProgress = update.fraction; self.clipMessage = update.message }
                 }
                 guard clipJobID == token else { return }
-                clipOutput = output; clipMessage = "Exported \(candidates.count) clips."
+                clipOutput = output; clipMessage = "Exported \(candidates.count) \(candidates.count == 1 ? "clip" : "clips")."
             } catch {
                 guard clipJobID == token else { return }
                 clipMessage = Task.isCancelled ? "Clip export cancelled." : "Clip export failed."

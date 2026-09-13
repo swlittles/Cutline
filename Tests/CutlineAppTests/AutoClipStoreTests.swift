@@ -50,6 +50,6 @@ extension EditorStoreTests {
         store.exportAutoClips(to: root, report: report)
         try await until({ !self.store.isExportingClips }, timeout: 30)
         XCTAssertNil(store.error); XCTAssertNotNil(store.clipOutput); XCTAssertEqual(store.project, before)
-        XCTAssertEqual(store.clipMessage, "Exported 1 clips.")
+        XCTAssertEqual(store.clipMessage, "Exported 1 clip.")
     }
 }

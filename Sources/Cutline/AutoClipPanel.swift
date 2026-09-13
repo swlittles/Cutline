@@ -156,11 +156,16 @@ struct ClipRegionSheet: View {
             Text("Calibrate on a visible game HUD").font(.headline)
             if let image {
                 let ratio = image.size.height / image.size.width
-                ZStack(alignment: .topLeading) {
-                    Image(nsImage: image).resizable().frame(width: 760, height: 760 * ratio)
-                    region(store.clipSettings.hud, color: .orange, label: "HUD", height: 760 * ratio)
-                    region(store.clipSettings.motionRegion, color: .green, label: "Motion", height: 760 * ratio)
-                }.clipped().frame(width: 760, height: 760 * ratio)
+                let previewWidth = min(760, 400 / max(0.01, ratio))
+                HStack {
+                    Spacer(minLength: 0)
+                    ZStack(alignment: .topLeading) {
+                        Image(nsImage: image).resizable().frame(width: previewWidth, height: previewWidth * ratio)
+                        region(store.clipSettings.hud, color: .orange, label: "HUD", width: previewWidth, height: previewWidth * ratio)
+                        region(store.clipSettings.motionRegion, color: .green, label: "Motion", width: previewWidth, height: previewWidth * ratio)
+                    }.clipped().frame(width: previewWidth, height: previewWidth * ratio)
+                    Spacer(minLength: 0)
+                }.frame(width: 760, height: 400)
             } else { ProgressView().frame(width: 760, height: 300) }
             if let loadError { Text(loadError).foregroundStyle(.red) }
             Slider(value: $time, in: 0...max(0.01, media.duration - 0.1)).accessibilityIdentifier("clips.regionTime")
@@ -181,10 +186,10 @@ struct ClipRegionSheet: View {
             } catch { if !Task.isCancelled { loadError = error.localizedDescription } }
         }
     }
-    private func region(_ r: ClipScanRegion, color: Color, label: String, height: Double) -> some View {
+    private func region(_ r: ClipScanRegion, color: Color, label: String, width: Double, height: Double) -> some View {
         Rectangle().stroke(color, lineWidth: 2).overlay(alignment: .topLeading) { Text(label).font(.caption).padding(3).background(color) }
-            .frame(width: max(0, min(1, r.width)) * 760, height: max(0, min(1, r.height)) * height)
-            .offset(x: max(0, min(1, r.x)) * 760, y: max(0, min(1, r.y)) * height)
+            .frame(width: max(0, min(1, r.width)) * width, height: max(0, min(1, r.height)) * height)
+            .offset(x: max(0, min(1, r.x)) * width, y: max(0, min(1, r.y)) * height)
     }
     private func regionFields(_ title: String, region: Binding<ClipScanRegion>) -> some View {
         HStack {

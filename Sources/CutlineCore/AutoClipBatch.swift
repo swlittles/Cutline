@@ -25,7 +25,7 @@ public enum AutoClipBatch {
         try encoder.encode(exported).write(to: staging.appendingPathComponent("analysis.json"), options: .atomic)
         try Task.checkCancellation()
         try FileManager.default.moveItem(at: staging, to: destination)
-        progress(ClipScanProgress(1, "Exported \(candidates.count) clips."))
+        progress(ClipScanProgress(1, "Exported \(candidates.count) \(candidates.count == 1 ? "clip" : "clips")."))
         return destination
     }
 }

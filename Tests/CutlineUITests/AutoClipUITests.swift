@@ -10,7 +10,7 @@ extension EditorUITests {
     }
     func scanAutomaticClips() {
         let button = app.buttons["clips.scan"]; reveal(button, panel: "clips.scroll"); button.click()
-        assertLabel("clips.status", "Found 1 clips to review.", timeout: 40)
+        assertLabel("clips.status", "Found 1 clip to review.", timeout: 40)
     }
     func testAutomaticClipsEmptyLibrary() {
         launch(project: false); tab("Clips")
@@ -34,7 +34,7 @@ extension EditorUITests {
         XCTAssertFalse(app.buttons["clips.export"].isEnabled)
         app.buttons["clips.selectAll"].click()
         let export = app.buttons["clips.export"]; reveal(export, panel: "clips.scroll"); export.click(); chooseFile(root)
-        assertLabel("clips.status", "Exported 1 clips.", timeout: 40)
+        assertLabel("clips.status", "Exported 1 clip.", timeout: 40)
         XCTAssertTrue(app.buttons["clips.showOutput"].exists)
         let folder = try XCTUnwrap(FileManager.default.contentsOfDirectory(at: root, includingPropertiesForKeys: nil).first { $0.lastPathComponent.hasPrefix("Cutline clips ") })
         let files = try FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil)

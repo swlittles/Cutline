@@ -69,7 +69,7 @@ public enum ClipMediaScanner {
         try Task.checkCancellation()
         if settings.useOCR { warnings.append("HUD OCR assumes the configured player and region are visible. Spectator views, assist icons, name collisions, HUD changes, or missed text can produce errors. No game-specific accuracy has been established on real footage.") }
         let candidates = AutoClipRules.candidates(evidence: evidence, duration: duration, settings: settings)
-        progress(ClipScanProgress(1, "Found \(candidates.count) clips to review."))
+        progress(ClipScanProgress(1, "Found \(candidates.count) \(candidates.count == 1 ? "clip" : "clips") to review."))
         return AutoClipReport(media: media, settings: settings, candidates: candidates, evidence: evidence.sorted { $0.time < $1.time }, audioSamples: audio, motionSamples: motion, warnings: warnings, sampledFrames: frames, ocrReads: ocrReads)
     }
 

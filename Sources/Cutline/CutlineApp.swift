@@ -86,10 +86,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private func mayClose() -> Bool {
         guard let store else { return true }
         if store.isTranscribing { store.transcriptionTask?.cancel() }
+        store.clipTask?.cancel()
         store.assistantTask?.cancel()
         store.generationTask?.cancel()
-        if store.isExporting || store.isImporting {
-            let alert = NSAlert(); alert.messageText = "Please wait for \(store.isExporting ? "the export" : "the import") to finish."
+        if store.isExporting || store.isExportingClips || store.isImporting {
+            let alert = NSAlert(); alert.messageText = "Please wait for \((store.isExporting || store.isExportingClips) ? "the export" : "the import") to finish."
             alert.runModal(); return false
         }
         return store.confirmDiscard()
