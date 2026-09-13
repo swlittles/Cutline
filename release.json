@@ -1,7 +1,7 @@
 {
-  "tag": "v0.3.0",
-  "version": "0.3.0",
-  "build": 5,
+  "tag": "v0.4.0",
+  "version": "0.4.0",
+  "build": 6,
   "mode": "signed",
-  "name": "Cutline-0.3.0-macos-universal"
+  "name": "Cutline-0.4.0-macos-universal"
 }
