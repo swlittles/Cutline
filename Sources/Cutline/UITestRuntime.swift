@@ -1,12 +1,30 @@
 #if DEBUG
 import Foundation
+import AppKit
 import CutlineCore
 
 /// Deterministic external-service boundary, compiled out of release builds.
 /// The UI and editing/rendering code paths remain the production implementations.
 enum UITestRuntime {
+    private static var focusMonitor: Any?
+    private static func recordFocus(_ event: NSEvent, phase: String, root: URL) {
+        let window = NSApp.keyWindow
+        let responder = window?.firstResponder
+        let editor = responder as? NSTextView
+        let line = "\(Date().timeIntervalSince1970) \(phase) event=\(event.type.rawValue) key=\(event.type == .keyDown ? event.keyCode : 0) point=\(event.locationInWindow) keyWindow=\(window != nil) responder=\(responder.map { String(describing: type(of: $0)) } ?? "none") fieldEditor=\(editor?.isFieldEditor ?? false) delegate=\(editor?.delegate.map { String(describing: type(of: $0)) } ?? "none")\n"
+        let url = root.appendingPathComponent("focus-events.txt")
+        let previous = (try? Data(contentsOf: url)) ?? Data()
+        try? (previous + Data(line.utf8)).write(to: url)
+    }
     static func install() {
         guard let root = LocalTools.testingRoot else { return }
+        if focusMonitor == nil {
+            focusMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseUp, .keyDown]) { event in
+                recordFocus(event, phase: "before", root: root)
+                DispatchQueue.main.async { recordFocus(event, phase: "after", root: root) }
+                return event
+            }
+        }
         URLProtocol.registerClass(UITestProtocol.self)
         try? Data("debug-isolated".utf8).write(to: root.appendingPathComponent("runtime-ready"), options: .atomic)
     }

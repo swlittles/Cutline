@@ -23,6 +23,9 @@ import CutlineCore
         app = XCUIApplication(); app.launchEnvironment["CUTLINE_TEST_ROOT"] = root.path
     }
     override func tearDownWithError() throws {
+        if let events = try? String(contentsOf: root.appendingPathComponent("focus-events.txt"), encoding: .utf8) {
+            let trace = XCTAttachment(string: events); trace.name = "Keyboard focus events"; trace.lifetime = .keepAlways; add(trace)
+        }
         if (testRun?.failureCount ?? 0) > 0 {
             let screenshot = XCTAttachment(screenshot: app.screenshot()); screenshot.lifetime = .keepAlways; add(screenshot)
             let tree = XCTAttachment(string: app.windows.allElementsBoundByIndex.map { $0.debugDescription }.joined(separator: "\n")); tree.lifetime = .keepAlways; add(tree)

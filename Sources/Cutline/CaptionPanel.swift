@@ -5,7 +5,6 @@ import CutlineCore
 struct CaptionPanel: View {
     @EnvironmentObject var store: EditorStore
     @State private var search = ""
-    @FocusState private var searchFocused: Bool
     @State private var trackCount = 1
     @State private var showSetup = false
     var body: some View {
@@ -58,8 +57,6 @@ struct CaptionPanel: View {
                     Button(action: store.addCaption) { Image(systemName: "plus") }.help("Add caption at playhead")
                 }.font(.system(size: 10))
                 TextField("Search the transcript", text: $search).textFieldStyle(.roundedBorder)
-                    .focused($searchFocused)
-                    .simultaneousGesture(TapGesture().onEnded { searchFocused = true })
                 let captions = store.visibleCaptions.filter { search.isEmpty || $0.text.localizedCaseInsensitiveContains(search) }
                 Text("\(captions.count) CAPTIONS").accessibilityIdentifier("captions.count").font(.system(size: 9, weight: .medium)).tracking(1).foregroundStyle(Studio.muted)
                 LazyVStack(spacing: 10) {
