@@ -1,12 +1,13 @@
 # Cutline 0.3.0
 
-First public macOS distribution of Cutline, an open-source video editor for game streamers.
+First Developer ID signed and Apple-notarized macOS release of Cutline, an open-source video editor for game streamers.
 
 - Native timeline editing, video/audio layers, transform and color controls, project recovery, and MP4 export.
 - Local automatic captions with whisper.cpp and FFmpeg; editable captions and SRT/WebVTT exchange.
 - Optional OpenRouter editing assistance and generated-media workflows.
 - Sparkle updates signed with a dedicated Cutline key and hosted on GitHub.
 - Separate Cutline Dev app for local work; release updates never replace it.
+- Notarized app and disk image, with stapled Apple tickets for distribution.
 - Extensive native UI, app-state and actual-media tests.
 
 Requires macOS 14 or later. Universal binary includes Apple silicon and Intel; Intel runtime behavior has not been validated on physical hardware.
