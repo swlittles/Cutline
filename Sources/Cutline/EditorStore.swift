@@ -289,3 +289,15 @@ final class EditorStore: ObservableObject {
         }
     }
 }
+
+@MainActor extension EditorStore {
+    /// Menu key equivalents run before the field editor on some macOS versions.
+    /// Preserve normal Delete behavior while typing instead of deleting a timeline clip.
+    func deleteFromKeyboard(responder: NSResponder? = NSApp.keyWindow?.firstResponder) {
+        if let editor = responder as? NSTextView, editor.isEditable {
+            editor.deleteBackward(nil)
+        } else {
+            deleteSelected()
+        }
+    }
+}

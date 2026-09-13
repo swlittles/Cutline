@@ -1,4 +1,5 @@
 import XCTest
+import AppKit
 import AVFoundation
 @testable import Cutline
 import CutlineCore
@@ -172,5 +173,26 @@ import CutlineCore
         seed(); store.rebuild(); XCTAssertFalse(store.canExport)
         try await until { !self.store.isBuilding }; XCTAssertTrue(store.canExport); XCTAssertNotNil(store.player.currentItem)
         store.seek(-2); XCTAssertEqual(store.playhead, 0); store.seek(100); XCTAssertEqual(store.playhead, 5)
+    }
+}
+
+@MainActor extension EditorStoreTests {
+    func testDeleteKeyEditsFocusedTextWithoutDeletingClip() {
+        let media = MediaItem(url: URL(fileURLWithPath: "/tmp/source.mp4"), duration: 5)
+        store.project.media = [media]
+        store.project.clips = [TimelineClip(mediaID: media.id, sourceOut: 5)]
+        store.selectedClipID = store.project.clips[0].id
+        let editor = NSTextView(); editor.string = "castle"; editor.setSelectedRange(NSRange(location: 0, length: 6))
+        store.deleteFromKeyboard(responder: editor)
+        XCTAssertEqual(editor.string, "")
+        XCTAssertEqual(store.project.clips.count, 1)
+    }
+    func testDeleteKeyWithoutTextFocusRemovesSelectedClip() {
+        let media = MediaItem(url: URL(fileURLWithPath: "/tmp/source.mp4"), duration: 5)
+        store.project.media = [media]
+        store.project.clips = [TimelineClip(mediaID: media.id, sourceOut: 5)]
+        store.selectedClipID = store.project.clips[0].id
+        store.deleteFromKeyboard(responder: NSResponder())
+        XCTAssertTrue(store.project.clips.isEmpty)
     }
 }

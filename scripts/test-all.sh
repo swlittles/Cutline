@@ -30,8 +30,8 @@ xcodebuild test -project Cutline.xcodeproj -scheme Cutline \
   -parallel-testing-enabled NO -enableCodeCoverage YES \
   -test-timeouts-enabled YES -maximum-test-execution-time-allowance 180 \
   -resultBundlePath "$result_dir/Cutline.xcresult" \
-  "${selection[@]}" > "$result_dir/xcodebuild.log" 2>&1
-result=$?
+  "${selection[@]}" 2>&1 | tee "$result_dir/xcodebuild.log" | awk '/Test Case .* (started|passed|failed)|Test Suite |Executed [0-9]|error:|\*\* TEST/ { print; fflush() }'
+result=${PIPESTATUS[0]}
 set -e
 if [ -d "$result_dir/Cutline.xcresult" ]; then
   xcrun xccov view --report --json "$result_dir/Cutline.xcresult" > "$result_dir/coverage.json" || true

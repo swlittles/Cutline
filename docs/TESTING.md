@@ -1,6 +1,6 @@
 # Automated testing
 
-Cutline has 155 XCTest cases across three layers: 79 core/media tests, 34 hosted application tests, and 42 native UI workflows, plus 14 Python release-tooling tests. `CutlineCoreTests` tests project invariants, subtitle/timeline transforms, provider transport, subprocesses, real AVFoundation composition and pixel output, and atomic export. `CutlineAppTests` hosts the actual application and tests EditorStore state, asynchronous work, undo/redo, persistence, and recovery. `CutlineUITests` drives the compiled macOS app through XCUITest, including native file dialogs, and reads the resulting project/media files to verify edits.
+Cutline has 157 XCTest cases across three layers: 79 core/media tests, 36 hosted application tests, and 42 native UI workflows, plus 14 Python release-tooling tests. `CutlineCoreTests` tests project invariants, subtitle/timeline transforms, provider transport, subprocesses, real AVFoundation composition and pixel output, and atomic export. `CutlineAppTests` hosts the actual application and tests EditorStore state, asynchronous work, undo/redo, persistence, and recovery. `CutlineUITests` drives the compiled macOS app through XCUITest, including native file dialogs, and reads the resulting project/media files to verify edits.
 
 ## Run
 
@@ -53,3 +53,5 @@ Outstanding acceptance work includes multi-hour/4K60 workloads, HDR/VFR and more
 | Failure isolation | Missing media and relinking, invalid edits leave projects intact, temporary-file cleanup, safe Release-mode test refusal |
 
 This table describes assertions in the suite. It does not imply exhaustive coverage of every setting combination or external-provider behavior. Consult the latest result bundle for the actual pass/fail status.
+
+The GitHub runner sets its virtual display to 1920×1080 before native UI tests and checks the available point dimensions. This CI-only script refuses to run on a local desktop. Small virtual displays otherwise leave the editor controls outside the screen.

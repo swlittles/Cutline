@@ -18,7 +18,9 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Install test dependencies
-        run: brew install xcodegen ffmpeg
+        run: brew install xcodegen ffmpeg screenresolution
+      - name: Configure virtual UI test desktop
+        run: bash scripts/ci-display.sh
       - name: Validate release tooling
         run: python3 -m unittest discover -s Tests/ReleaseTests -v
       - name: Run unit, media integration, and native UI tests

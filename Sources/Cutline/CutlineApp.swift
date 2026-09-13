@@ -60,7 +60,7 @@ struct CutlineApp: App {
                 Button("Mark Highlight", action: store.addMarker).keyboardShortcut("m", modifiers: [.command, .shift])
                 Button("Split at Playhead", action: store.split).keyboardShortcut("b").disabled(store.project.clips.isEmpty)
                 Button("Duplicate Clip", action: store.duplicate).keyboardShortcut("d").disabled(store.selectedClip == nil)
-                Button("Delete Clip", action: store.deleteSelected).keyboardShortcut(.delete, modifiers: []).disabled(store.selectedClip == nil)
+                Button("Delete Clip", action: { store.deleteFromKeyboard() }).keyboardShortcut(.delete, modifiers: []).disabled(store.selectedClip == nil)
                 Divider()
                 Button("Back 5 Seconds", action: { store.seek(store.playhead - 5) }).keyboardShortcut(.leftArrow, modifiers: [])
                 Button("Forward 5 Seconds", action: { store.seek(store.playhead + 5) }).keyboardShortcut(.rightArrow, modifiers: [])

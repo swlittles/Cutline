@@ -32,7 +32,7 @@ struct EditorView: View {
                 Spacer()
                 Text("LOCAL FIRST").tracking(1.5)
                 Text("•").foregroundStyle(Studio.muted)
-                Text("Cutline 0.2")
+                Text("\(AppEnvironment.current.name) \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "Development")")
             }.font(.system(size: 10)).foregroundStyle(Studio.muted).padding(.horizontal, 18).frame(height: 29)
         }
         .disclosureGroupStyle(StudioDisclosureStyle())

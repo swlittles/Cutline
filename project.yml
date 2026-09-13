@@ -28,8 +28,8 @@ targets:
       path: Config/Info.plist
       properties:
         CFBundleDisplayName: Cutline Test Build
-        CFBundleShortVersionString: '0.2.0'
-        CFBundleVersion: '3'
+        CFBundleShortVersionString: '0.3.0'
+        CFBundleVersion: '4'
         NSPrincipalClass: NSApplication
         UTExportedTypeDeclarations:
           - UTTypeIdentifier: studio.cutline.project
