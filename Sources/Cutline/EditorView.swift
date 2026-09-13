@@ -184,6 +184,9 @@ struct NativePlayer: NSViewRepresentable {
     let player: AVPlayer
     func makeNSView(context: Context) -> AVPlayerView {
         let view = AVPlayerView(); view.player = player; view.controlsStyle = .none; view.videoGravity = .resizeAspect
+        // Live Text's VisionKit overlay can take first responder while a new
+        // paused frame is analyzed, stealing keyboard input from editor fields.
+        view.allowsVideoFrameAnalysis = false
         return view
     }
     func updateNSView(_ view: AVPlayerView, context: Context) { view.player = player }
