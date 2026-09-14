@@ -4,31 +4,32 @@ IMPORTANT: This file was signed by Sparkle. Any modifications to this file requi
     <channel>
         <title>Cutline</title>
         <item>
-            <title>0.4.0</title>
-            <pubDate>Sun, 13 Sep 2026 18:07:39 +0000</pubDate>
-            <sparkle:version>6</sparkle:version>
-            <sparkle:shortVersionString>0.4.0</sparkle:shortVersionString>
+            <title>0.3.0</title>
+            <pubDate>Sun, 13 Sep 2026 16:37:37 +0000</pubDate>
+            <sparkle:version>5</sparkle:version>
+            <sparkle:shortVersionString>0.3.0</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-            <description sparkle:format="markdown"><![CDATA[# Cutline 0.4.0
+            <description sparkle:format="markdown"><![CDATA[# Cutline 0.3.0
 
-Automatic local clipping for game recordings, with no OpenRouter calls or AI API costs.
+First Developer ID signed and Apple-notarized macOS release of Cutline, an open-source video editor for game streamers.
 
-- New Clips workspace: measure audio bursts and sustained frame changes across a recording, then group activity into padded, non-overlapping clips.
-- Optional local HUD OCR with game profiles for Valorant, Counter-Strike 2 and Rainbow Six Siege; editable player aliases and visual region calibration. WARDOGS and Tarkov use audio/motion/markers unless a usable feed is calibrated.
-- Select an isolated OBS audio track, adjust thresholds and timing, and inspect the measured evidence for every candidate.
-- Preview clips, append them to the timeline with undo, or batch-export independent MP4s, editable projects and an analysis report.
-- Cancellation and source-change checks, plus synthetic signal, real-media, OCR, app-state and native UI tests.
+- Native timeline editing, video/audio layers, transform and color controls, project recovery, and MP4 export.
+- Local automatic captions with whisper.cpp and FFmpeg; editable captions and SRT/WebVTT exchange.
+- Optional OpenRouter editing assistance and generated-media workflows.
+- Sparkle updates signed with a dedicated Cutline key and hosted on GitHub.
+- Separate Cutline Dev app for local work; release updates never replace it.
+- Notarized app and disk image, with stapled Apple tickets for distribution.
+- Extensive native UI, app-state and actual-media tests.
 
-Requires macOS 14 or later. Universal Apple silicon / Intel app, Developer ID signed and Apple-notarized. Existing installations can use Check for Updates; Cutline Dev stays separate.
+Requires macOS 14 or later. Universal binary includes Apple silicon and Intel; Intel runtime behavior has not been validated on physical hardware.
+Install FFmpeg and whisper.cpp separately for transcription and still-image conversion (`brew install ffmpeg whisper-cpp`). Models download from the Captions panel.
 
-Automatic clipping uses AVFoundation and optional built-in macOS OCR. It needs no FFmpeg, transcript, downloaded model or API key. Captions still use separately installed FFmpeg/whisper.cpp. Batch clips preserve the source field of view in 16:9; timeline effects are not copied.
-
-Review candidates before sharing: loudness, motion and OCR are fallible activity indicators. No real-game precision/recall or multi-hour 4K performance claim is made. Cutline remains an early development version without full CapCut parity.
+Developer-preview releases are ad-hoc signed and not notarized by Apple. Stable releases require Developer ID signing and notarization. Check the release tag and release.json for the artifact's mode. Cutline is an early development version and does not yet have full CapCut parity.
 ]]></description>
-            <enclosure url="https://github.com/swlittles/Cutline/releases/download/v0.4.0/Cutline-0.4.0-macos-universal.zip" length="3623283" type="application/octet-stream" sparkle:edSignature="shcY4VGKXPIju7WP8a/MR9dgc1ZeVfgJDQSEJ1fKg5bhKQfoM2j4IMkATczd5zlprrNGCdOXTurcWC6E3ZbZBw=="></enclosure>
+            <enclosure url="https://github.com/swlittles/Cutline/releases/download/v0.3.0/Cutline-0.3.0-macos-universal.zip" length="3165223" type="application/octet-stream" sparkle:edSignature="SsHZMr254WMv3eN+Qo+RfGHu824kIpnd25VSOABDY4JQEtqtR21LY4ixIn4XK4lYUQbIpaRmIThKPZPtq+zfDQ=="></enclosure>
         </item>
     </channel>
 </rss><!-- sparkle-signatures:
-edSignature: IGa0ixo8HOt03oUV02DaISpfEnXvrUcTNyEoBMqsqC8J3b1xLvCUqt+PY3zpO3G1zWvjTrpUS1sZMXAEwhMyBA==
-length: 2693
+edSignature: YGvG90RgSOyQvxDmcUjPdtaDeAhyzyCHEifK42zVfMWUnvzy/hv7yq/Wvn5OqVEJW/QExPUQRPzpg6UwtDpbDA==
+length: 2436
 -->
