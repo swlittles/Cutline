@@ -30,6 +30,8 @@ else
   BIN=$(swift build -c release --show-bin-path)
   cp "$BIN/Cutline" "$APP/Contents/MacOS/Cutline"
 fi
+# Keep debug paths in local build outputs, out of signed distributables.
+xcrun strip -S "$APP/Contents/MacOS/Cutline"
 ditto "$BIN/Sparkle.framework" "$APP/Contents/Frameworks/Sparkle.framework"
 FRAMEWORK="$APP/Contents/Frameworks/Sparkle.framework"
 SIGN_ARGS=(--force --sign "$IDENTITY")
