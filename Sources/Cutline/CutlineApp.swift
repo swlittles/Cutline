@@ -68,7 +68,7 @@ struct CutlineApp: App {
                 Button("Next Frame", action: { store.seek(store.playhead + 1.0 / Double(store.project.options.fps)) }).keyboardShortcut(.rightArrow, modifiers: .option)
             }
         }
-        Settings { UpdatesSettingsView(updates: updates) }
+        Settings { UpdatesSettingsView(updates: updates).environmentObject(store) }
     }
 }
 

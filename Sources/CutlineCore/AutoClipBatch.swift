@@ -2,7 +2,7 @@ import Foundation
 
 public enum AutoClipBatch {
     /// Each successful batch is a new directory. Failures and cancellation leave no half-published batch.
-    public static func export(report: AutoClipReport, candidates: [AutoClipCandidate], to parent: URL, options: ProjectSettings = ProjectSettings(), hooks: [String: String] = [:], progress: @escaping @Sendable (ClipScanProgress) -> Void = { _ in }) async throws -> URL {
+    public static func export(report: AutoClipReport, candidates: [AutoClipCandidate], to parent: URL, options: ProjectSettings = ProjectSettings(), hooks: [String: String] = [:], branding: ShortBranding = ShortBranding(), progress: @escaping @Sendable (ClipScanProgress) -> Void = { _ in }) async throws -> URL {
         guard parent.isFileURL, !candidates.isEmpty, candidates.count <= 100 else { throw EditError.invalid("Select clips and a local output folder.") }
         let token = UUID().uuidString
         let staging = parent.appendingPathComponent(".cutline-clips-\(token)", isDirectory: true)
@@ -17,8 +17,9 @@ public enum AutoClipBatch {
             project.options = options
             project.shortHook = hooks[candidate.id]
             try project.validateForExport()
+            try branding.validate()
             let stem = String(format: "%02d", index + 1) + " - " + candidate.title.replacingOccurrences(of: ":", with: "-")
-            let render = try await CompositionEngine.build(project)
+            let render = try await CompositionEngine.build(project, branding: branding)
             try await CompositionEngine.export(render, to: staging.appendingPathComponent(stem + ".mp4")) { value in
                 progress(ClipScanProgress((Double(index) + value) / Double(candidates.count), "Exporting clip \(index + 1) of \(candidates.count)…"))
             }

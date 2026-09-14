@@ -36,7 +36,7 @@ struct AutoClipPanel: View {
                         Text("\(store.selectedAutoClips.count) selected · source timecodes").accessibilityIdentifier("clips.selection")
                         Button("Export selected clips…", action: store.exportAutoClips).accessibilityIdentifier("clips.export")
                             .disabled(busy || store.selectedAutoClips.isEmpty || !store.clipSourceUnchanged)
-                        Text("Creates separate 9:16 mobile shorts: 30% facecam, 2% black Kick strip, 68% gameplay. Every clip needs a hook and checked source crops. Timeline effects are not included.").foregroundStyle(Studio.muted)
+                        Text("Creates separate 9:16 mobile shorts: 30% facecam, 2% black branding strip, 68% gameplay. Every clip needs a hook and checked source crops. Timeline effects are not included.").foregroundStyle(Studio.muted)
                         ForEach(report.candidates) { candidate in candidateCard(candidate).disabled(busy || !store.clipSourceUnchanged) }
                     }
                     DisclosureGroup("Scan details") {
@@ -53,7 +53,7 @@ struct AutoClipPanel: View {
         }.accessibilityIdentifier("clips.scroll")
             .onChange(of: store.clipMedia?.id) { _, _ in store.clipSettings.hudCalibrated = false }
             .sheet(item: $preview) { candidate in
-                if let report = store.clipReport { ClipPreviewSheet(project: try? store.preparedAutoClip(candidate, report: report), candidate: candidate) }
+                if let report = store.clipReport { ClipPreviewSheet(branding: store.creatorProfile, project: try? store.preparedAutoClip(candidate, report: report), candidate: candidate) }
             }
             .sheet(isPresented: $showFraming) { ShortFramingSheet().environmentObject(store) }
             .sheet(isPresented: $showRegions) { if let media = store.clipMedia { ClipRegionSheet(media: media).environmentObject(store) } }
@@ -132,6 +132,7 @@ struct AutoClipPanel: View {
 }
 
 struct ClipPreviewSheet: View {
+    let branding: ShortBranding
     let project: EditProject?
     let candidate: AutoClipCandidate
     @Environment(\.dismiss) var dismiss
@@ -141,19 +142,19 @@ struct ClipPreviewSheet: View {
         VStack(spacing: 12) {
             Text(candidate.title).font(.headline)
             NativePlayer(player: player).frame(width: 304, height: 540)
-            Text("Mobile Short · 9:16 · Kick.com/your-channel").font(.caption)
+            Text("Mobile Short · 9:16 · \(branding.displayText)").font(.caption)
             if let error { Text(error).foregroundStyle(.orange).frame(maxWidth: 400) }
             HStack {
                 Button("Play clip") { player.seek(to: .zero, toleranceBefore: .zero, toleranceAfter: .zero) { _ in player.play() } }.accessibilityIdentifier("clips.previewPlay").disabled(player.currentItem == nil)
                 Button("Pause") { player.pause() }
                 Button("Done") { dismiss() }.keyboardShortcut(.cancelAction)
             }
-        }.padding(20).task {
+        }.padding(20).task(id: branding) {
             guard let project else { error = "The clip could not be prepared."; return }
             do {
-                let render = try await CompositionEngine.build(project); try Task.checkCancellation()
+                let render = try await CompositionEngine.build(project, branding: branding); try Task.checkCancellation()
                 player.replaceCurrentItem(with: render.playerItem())
-                do { try project.validateForExport() } catch { self.error = error.localizedDescription }
+                do { try project.validateForExport(); try branding.validate() } catch { self.error = error.localizedDescription }
             } catch { self.error = error.localizedDescription }
         }.onDisappear { player.pause(); player.replaceCurrentItem(with: nil) }
     }

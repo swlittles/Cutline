@@ -21,7 +21,7 @@ import CutlineCore
             project.selectWorkflow(workflow)
             project.shortHook = "Watch this play"; project.media[0].shortFraming = ShortFraming(); project.media[0].shortFraming?.confirmed = true
             let format = workflow.format
-            let render = try await CompositionEngine.build(project)
+            let render = try await CompositionEngine.build(project, branding: ShortBranding(text: "example.test/channel", logo: .kick))
             guard abs(render.asset.duration.seconds - 2) < 0.01 else { throw EditError.invalid("Wrong composition duration") }
             let url = output.appendingPathComponent(format.rawValue + ".mp4")
             try await CompositionEngine.export(render, to: url)

@@ -6,6 +6,7 @@ public struct RenderComposition {
     public let video: AVMutableVideoComposition
     public let audio: AVMutableAudioMix
     let exportProject: EditProject
+    let branding: ShortBranding
     public func playerItem() -> AVPlayerItem {
         let item = AVPlayerItem(asset: asset)
         item.videoComposition = video; item.audioMix = audio
@@ -31,7 +32,7 @@ public enum CompositionEngine {
         item.audioTrackCount = try await asset.loadTracks(withMediaType: .audio).count
         return item
     }
-    public static func build(_ project: EditProject) async throws -> RenderComposition {
+    public static func build(_ project: EditProject, branding: ShortBranding = ShortBranding()) async throws -> RenderComposition {
         try project.validate()
         guard !project.clips.isEmpty else { throw EditError.invalid("Add a clip to the timeline first.") }
         let composition = AVMutableComposition()
@@ -62,7 +63,7 @@ public enum CompositionEngine {
             if clip.speed != 1 { videoTrack.scaleTimeRange(CMTimeRange(start: cursor, duration: sourceRange.duration), toDuration: targetDuration) }
             let range = CMTimeRange(start: cursor, duration: targetDuration)
             let layer = LayerRecipe(trackID: videoTrack.trackID, transform: try await source.load(.preferredTransform))
-            instructions.append(FrameInstruction(range: range, main: layer, overlays: overlayLayers.filter { ($0.overlay?.start ?? 0) < range.end.seconds && ($0.overlay!.start + $0.overlay!.duration) > range.start.seconds }, adjustments: clip.adjustments ?? ClipAdjustments(), captions: captions.filter { $0.start < range.end.seconds && $0.end > range.start.seconds }, style: project.captionTrack?.style ?? CaptionStyle(), sourceIn: clip.sourceIn, shortFraming: project.workflow == .mobileShort ? (media.shortFraming ?? ShortFraming()) : nil, hook: project.hook(for: clip)))
+            instructions.append(FrameInstruction(range: range, main: layer, overlays: overlayLayers.filter { ($0.overlay?.start ?? 0) < range.end.seconds && ($0.overlay!.start + $0.overlay!.duration) > range.start.seconds }, adjustments: clip.adjustments ?? ClipAdjustments(), captions: captions.filter { $0.start < range.end.seconds && $0.end > range.start.seconds }, style: project.captionTrack?.style ?? CaptionStyle(), sourceIn: clip.sourceIn, shortFraming: project.workflow == .mobileShort ? (media.shortFraming ?? ShortFraming()) : nil, hook: project.hook(for: clip), branding: branding))
             let sources = try await asset.loadTracks(withMediaType: .audio)
             for (index, sourceAudio) in sources.enumerated() {
                 guard let audioTrack = composition.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid) else { continue }
@@ -100,11 +101,12 @@ public enum CompositionEngine {
         video.renderSize = canvas; video.frameDuration = CMTime(value: 1, timescale: CMTimeScale(project.options.fps))
         video.instructions = instructions
         let audio = AVMutableAudioMix(); audio.inputParameters = audioParameters
-        return RenderComposition(asset: composition, video: video, audio: audio, exportProject: project)
+        return RenderComposition(asset: composition, video: video, audio: audio, exportProject: project, branding: branding)
     }
     public static func export(_ render: RenderComposition, to url: URL, progress: @escaping @Sendable (Double) -> Void = { _ in }) async throws {
         try Task.checkCancellation()
         try render.exportProject.validateForExport()
+        if render.exportProject.workflow == .mobileShort { try render.branding.validate() }
         guard let session = AVAssetExportSession(asset: render.asset, presetName: AVAssetExportPresetHighestQuality) else { throw EditError.invalid("An export session could not be created.") }
         session.videoComposition = render.video; session.audioMix = render.audio
         session.outputURL = url; session.outputFileType = .mp4; session.shouldOptimizeForNetworkUse = true

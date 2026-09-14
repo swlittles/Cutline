@@ -1,6 +1,6 @@
 # Local automatic clipping
 
-**Output:** every automatic clip is a [Mobile Short](OUTPUT_WORKFLOWS.md): 9:16 with 30% facecam, 2% mandatory black Kick branding strip, and 68% gameplay. Set a hook on each candidate (or a shared hook in the Inspector), and check the recording in **Short framing**. No additional AI service is used.
+**Output:** every automatic clip is a [Mobile Short](OUTPUT_WORKFLOWS.md): 9:16 with 30% facecam, 2% mandatory black branding strip (configured locally in Settings), and 68% gameplay. Set a hook on each candidate (or a shared hook in the Inspector), and check the recording in **Short framing**. No additional AI service is used.
 
 Open **Clips**, choose an imported recording, select the audio track, and click **Find clips**. The scan does not require a timeline, captions, an OpenRouter key, or a network connection. It analyzes the source recording rather than the edited timeline.
 
@@ -16,17 +16,17 @@ Review each candidate with **Preview** and **Why this clip?**. **Add to timeline
 
 Audio peaks and visual activity are measurements, not a clip-worthiness model. The score is a ranking of measured evidence, not a confidence percentage or a guarantee that a play is interesting. No candidates is a valid result. There is no paid fallback.
 
-## Game profiles from game
+## Game profiles
 
-The native implementation was informed by `reference-editor/packages/clipper/src/game-profiles.ts`, `hud-scan.ts`, `gameplay.ts` and `audio-energy.ts` (repository revision recorded below). Cutline does not run that repository's cloud worker, transcript service, OpenRouter selectors, or rendering pipeline.
+Game presets contain timing and approximate HUD regions. Enter your own exact player aliases; all presets start with empty names.
 
 | Profile | Starting alias | Starting HUD region | Setup / payoff | Encounter gap |
 | --- | --- | --- | --- | --- |
-| Valorant | playerone | x 55%, y 2%, width 45%, height 30% | 6 / 4 sec | 12 sec |
-| Counter-Strike 2 | PlayerOne | same upper-right region | 6 / 4 sec | 12 sec |
-| Rainbow Six Siege | PlayerOne | same upper-right region | 8 / 4 sec | 15 sec |
-| WARDOGS | PlayerOne | no verified preset | 10 / 5 sec | 20 sec |
-| Escape from Tarkov | PlayerOne | no verified preset | 15 / 8 sec | 25 sec |
+| Valorant | User-entered | x 55%, y 2%, width 45%, height 30% | 6 / 4 sec | 12 sec |
+| Counter-Strike 2 | User-entered | same upper-right region | 6 / 4 sec | 12 sec |
+| Rainbow Six Siege | User-entered | same upper-right region | 8 / 4 sec | 15 sec |
+| WARDOGS | User-entered | no verified preset | 10 / 5 sec | 20 sec |
+| Escape from Tarkov | User-entered | no verified preset | 15 / 8 sec | 25 sec |
 
 Coordinates use the displayed frame's top-left, after its rotation transform, and are fractions of width/height. The three starting rectangles are not accuracy-certified. OCR requires explicit calibration confirmation; switching recordings or profiles, opening a project, or restarting clears that confirmation. For unsupported games, the initial rectangle is only an editable placeholder. Tarkov may have no usable elimination feed; use audio/motion/markers instead of claiming kill detection. Profile changes retain per-game edits, saved locally when a scan starts. Dev and production profiles use separate application-support directories.
 
@@ -41,5 +41,3 @@ Synthetic tests cover relative/absolute loudness thresholds, selected-track isol
 Scans retain numeric measurements and the current frame rather than dumping every frame to disk. Audio decoding is sequential; frame sampling uses timestamped AVFoundation image generation. Scans support local recordings up to 24 hours but multi-hour 4K/OBS performance has not been benchmarked. No model download, FFmpeg installation, or transcription is required for this feature. Decoder errors are shown instead of silently returning partial coverage. MP4/MOV inputs supported by AVFoundation are the intended sources; unsupported containers/codecs must be remuxed or converted first.
 
 Before trusting automatic selection for a game, calibrate its region on representative footage, then label a separate set of recordings with expected events and clip boundaries. Include deaths, assists, spectator view, scoreboard/menu screens, busy feeds, quiet gameplay, and HUD-scale/overlay changes. Review false positives, missed events and whether setup/payoff remains complete. No real-game accuracy percentage is claimed.
-
-Reference revision: `04498f6da411fe531e075e2b68f8797a5749d361`.

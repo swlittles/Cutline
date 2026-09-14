@@ -74,7 +74,7 @@ final class OutputWorkflowTests: XCTestCase {
         XCTAssertEqual(pixel(fitted, x: 1, y: 1), [0,0,0,255])
     }
     func testMandatoryBrandContainsBlackStripGreenMarkAndWhiteAddress() {
-        let image = CutlineVideoCompositor().shortBrand(size: CGSize(width: 1080, height: 38))
+        let image = CutlineVideoCompositor().shortBrand(size: CGSize(width: 1080, height: 38), branding: ShortBranding(text: "example.test/player", logo: .kick))
         XCTAssertEqual(pixel(image, x: 1, y: 20), [0,0,0,255])
         var bytes = [UInt8](repeating: 0, count: 1080 * 38 * 4)
         CIContext().render(image, toBitmap: &bytes, rowBytes: 1080 * 4, bounds: image.extent, format: .RGBA8, colorSpace: CGColorSpaceCreateDeviceRGB())
@@ -105,7 +105,7 @@ final class OutputWorkflowTests: XCTestCase {
         var p = shortProject(); p.clips[0].adjustments = ClipAdjustments(); p.clips[0].adjustments?.fadeIn = 2
         let root = try Fixtures.temporary(); defer { try? FileManager.default.removeItem(at: root) }
         let url = root.appendingPathComponent("branded.mp4")
-        let render = try await CompositionEngine.build(p); try await CompositionEngine.export(render, to: url)
+        let render = try await CompositionEngine.build(p, branding: ShortBranding(text: "example.test/player", logo: .kick)); try await CompositionEngine.export(render, to: url)
         let generator = AVAssetImageGenerator(asset: AVURLAsset(url: url))
         let frame = try await generator.image(at: CMTime(seconds: 0.1, preferredTimescale: 600)).image
         XCTAssertEqual(frame.width, 720); XCTAssertEqual(frame.height, 1280)

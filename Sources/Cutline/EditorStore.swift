@@ -5,6 +5,7 @@ import CutlineCore
 
 @MainActor
 final class EditorStore: ObservableObject {
+    @Published private(set) var creatorProfile = ShortBranding()
     @Published var visibleCaptions: [ProjectedCaption] = []
     @Published var aiSectionCount = 0
     @Published var workspace = "Media"
@@ -72,6 +73,7 @@ final class EditorStore: ObservableObject {
     var canExport: Bool { render != nil && !isBuilding && !isExporting && !project.clips.isEmpty }
 
     init() {
+        do { creatorProfile = try CreatorProfileStore.load() } catch { self.error = error.localizedDescription }
         if let data = try? Data(contentsOf: LocalTools.support.appendingPathComponent("autoclip-profiles.json")), let profiles = try? JSONDecoder().decode([String: AutoClipSettings].self, from: data) { clipProfiles = profiles }
         if let saved = clipProfiles["last"] { clipSettings = saved }; clipSettings.hudCalibrated = false
         player.actionAtItemEnd = .pause
@@ -87,6 +89,15 @@ final class EditorStore: ObservableObject {
         }
     }
 
+    func saveCreatorProfile(_ value: ShortBranding) throws {
+        try CreatorProfileStore.save(value)
+        creatorProfile = value
+        rebuild()
+    }
+    func validateExport(_ project: EditProject) throws {
+        try project.validateForExport()
+        if project.workflow == .mobileShort { try creatorProfile.validate() }
+    }
     func commit(_ change: (inout EditProject) -> Void) {
         let old = project
         change(&project)
@@ -111,6 +122,7 @@ final class EditorStore: ObservableObject {
         rebuildTask?.cancel(); player.pause(); isPlaying = false
         let token = UUID(); revision = token
         let snapshot = project
+        let branding = creatorProfile
         let position = min(playhead, project.duration)
         render = nil
         guard !snapshot.clips.isEmpty else {
@@ -119,7 +131,7 @@ final class EditorStore: ObservableObject {
         isBuilding = true
         rebuildTask = Task {
             do {
-                let result = try await CompositionEngine.build(snapshot)
+                let result = try await CompositionEngine.build(snapshot, branding: branding)
                 guard !Task.isCancelled, revision == token else { return }
                 render = result; player.replaceCurrentItem(with: result.playerItem())
                 seek(position); isBuilding = false
@@ -292,7 +304,7 @@ final class EditorStore: ObservableObject {
     }
     func exportVideo() {
         guard canExport, let render else { return }
-        do { try project.validateForExport() } catch { self.error = error.localizedDescription; return }
+        do { try validateExport(project) } catch { self.error = error.localizedDescription; return }
         let panel = NSSavePanel(); panel.allowedContentTypes = [.mpeg4Movie]
         panel.nameFieldStringValue = project.name + ".mp4"
         guard panel.runModal() == .OK, let destination = panel.url else { return }

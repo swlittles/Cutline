@@ -22,7 +22,7 @@ struct InspectorView: View {
                         Text("Older project: choose an output workflow before export.").foregroundStyle(.orange)
                     }
                     if store.project.workflow == .mobileShort {
-                        Text("30% facecam · 2% black Kick strip · 68% gameplay. Branding is always included.").foregroundStyle(Studio.muted)
+                        Text("30% facecam · 2% black branding strip · 68% gameplay. Branding is always included. Set your branding in Settings.").foregroundStyle(Studio.muted)
                         TextField("Required on-screen hook", text: Binding(get: { store.project.shortHook ?? "" }, set: { text in store.commit { $0.shortHook = text } }))
                             .textFieldStyle(.roundedBorder).accessibilityIdentifier("short.hook")
                         Text("Shown for the first 3 seconds of each clip. Up to 80 characters. Override individual clips below.").font(.caption).foregroundStyle(Studio.muted)

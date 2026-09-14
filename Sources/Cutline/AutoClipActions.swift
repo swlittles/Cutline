@@ -20,6 +20,7 @@ extension EditorStore {
         do {
             try FileManager.default.createDirectory(at: LocalTools.support, withIntermediateDirectories: true)
             try JSONEncoder().encode(clipProfiles).write(to: LocalTools.support.appendingPathComponent("autoclip-profiles.json"), options: .atomic)
+            try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: LocalTools.support.appendingPathComponent("autoclip-profiles.json").path)
         } catch { self.error = error.localizedDescription; return }
         let settings = clipSettings, token = UUID(); clipJobID = token
         let markers = (project.markers ?? []).filter { marker in project.clips.contains { $0.id == marker.clipID && $0.mediaID == media.id } }.map { ClipEvidence(time: $0.sourceTime, signal: .marker, detail: $0.label) }
@@ -61,7 +62,7 @@ extension EditorStore {
     }
     func exportAutoClips() {
         guard !isExportingClips, !isScanningClips, clipSourceUnchanged, let report = clipReport, !selectedAutoClips.isEmpty else { return }
-        do { for candidate in report.candidates where selectedAutoClips.contains(candidate.id) { try preparedAutoClip(candidate, report: report).validateForExport() } }
+        do { for candidate in report.candidates where selectedAutoClips.contains(candidate.id) { try validateExport(preparedAutoClip(candidate, report: report)) } }
         catch { self.error = error.localizedDescription; return }
         let panel = NSOpenPanel(); panel.canChooseFiles = false; panel.canChooseDirectories = true; panel.canCreateDirectories = true; panel.prompt = "Export clips"; panel.message = "A new folder will contain each MP4, editable project, and the scan report."
         guard panel.runModal() == .OK, let folder = panel.url else { return }
@@ -75,11 +76,11 @@ extension EditorStore {
         guard let media = project.media.first(where: { $0.sameSource(as: report.media) }) else { error = "The recording changed. Scan it again."; return }
         exportReport.media = media
         let hooks = Dictionary(uniqueKeysWithValues: candidates.map { ($0.id, autoClipHook($0.id)) })
-        let token = clipJobID, options = project.options
+        let token = clipJobID, options = project.options, branding = creatorProfile
         isExportingClips = true; clipProgress = 0; clipMessage = "Preparing clip exports…"; clipOutput = nil
         clipExportTask = Task {
             do {
-                let output = try await AutoClipBatch.export(report: exportReport, candidates: candidates, to: folder, options: options, hooks: hooks) { [weak self] update in
+                let output = try await AutoClipBatch.export(report: exportReport, candidates: candidates, to: folder, options: options, hooks: hooks, branding: branding) { [weak self] update in
                     Task { @MainActor in guard let self, self.clipJobID == token, self.isExportingClips else { return }; self.clipProgress = update.fraction; self.clipMessage = update.message }
                 }
                 guard clipJobID == token else { return }

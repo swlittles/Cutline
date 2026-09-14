@@ -75,7 +75,11 @@ struct UpdatesSettingsView: View {
             } else {
                 Text("This is a local development build. Rebuild it from the dev branch to update. It never checks for or installs release updates.").accessibilityIdentifier("updates.development")
             }
-            if let address = Bundle.main.object(forInfoDictionaryKey: "CutlineReleasesURL") as? String, let url = URL(string: address) { Link("GitHub releases and downloads", destination: url) }
+            if let address = Bundle.main.object(forInfoDictionaryKey: "CutlineReleasesURL") as? String, let url = URL(string: address) {
+                Link("GitHub releases and downloads", destination: url)
+            }
+            Divider()
+            CreatorProfileView()
         }.padding(24).frame(width: 450).onAppear { updates.start() }
     }
 }

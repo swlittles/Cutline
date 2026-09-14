@@ -88,7 +88,7 @@ final class AutoClipTests: XCTestCase {
     }
     func testOCRRequiresExplicitCalibrationAndRealAliases() {
         var s = AutoClipSettings(); XCTAssertFalse(s.useOCR); s.useOCR = true
-        XCTAssertThrowsError(try s.validate()); s.hudCalibrated = true; s.aliases = "PlayerOne"; XCTAssertNoThrow(try s.validate())
+        XCTAssertThrowsError(try s.validate()); s.hudCalibrated = true; XCTAssertThrowsError(try s.validate()); s.aliases = "PlayerOne"; XCTAssertNoThrow(try s.validate())
         s.aliases = "You,  "; XCTAssertThrowsError(try s.validate())
     }
     func testGameProfilesMatchReferenceAndNoInventedUnsupportedFeed() {
@@ -163,7 +163,7 @@ final class AutoClipTests: XCTestCase {
         let c = AutoClipCandidate(id: "one", start: 4, end: 8, score: 20, evidence: [event(5)])
         let report = AutoClipReport(media: media, settings: AutoClipSettings(), candidates: [c], evidence: c.evidence)
         var options = ProjectSettings(); options.resolution = 720
-        let output = try await AutoClipBatch.export(report: report, candidates: [c], to: root, options: options, hooks: [c.id: "Watch this play"])
+        let output = try await AutoClipBatch.export(report: report, candidates: [c], to: root, options: options, hooks: [c.id: "Watch this play"], branding: ShortBranding(text: "example.test/player"))
         let files = try FileManager.default.contentsOfDirectory(at: output, includingPropertiesForKeys: nil)
         let video = try XCTUnwrap(files.first { $0.pathExtension == "mp4" })
         let exported = try await CompositionEngine.inspect(video); XCTAssertEqual(exported.duration, 4, accuracy: 0.1)

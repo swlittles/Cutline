@@ -14,7 +14,7 @@ public struct HUDRead: Equatable, Sendable {
     public var death: Bool
 }
 public enum ClipHUD {
-    /// Port of game's conservative name → icon-sized gap → victim rule.
+    /// Conservative name → icon-sized gap → victim rule.
     public static func parse(_ words: [HUDWord], aliases: [String]) -> [HUDRead] {
         let names = Set(aliases.map(AutoClipSettings.normalizeName).filter { !$0.isEmpty && $0 != "you" })
         let words = words.filter { $0.confidence >= 0.85 && [$0.x,$0.y,$0.width,$0.height,$0.confidence].allSatisfy(\.isFinite) && $0.width > 0 && $0.height > 0 }.sorted { $0.y == $1.y ? $0.x < $1.x : $0.y < $1.y }

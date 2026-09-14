@@ -3,6 +3,7 @@ import CutlineCore
 
 extension EditorUITests {
     func prepareAutoClipRecording() throws {
+        try CreatorProfileStore.save(ShortBranding(text: "example.test/player"), to: root)
         let media = MediaItem(url: fixture.appendingPathComponent("autoclip.mp4"), duration: 12)
         project.media = [media]; project.media[0].audioTrackCount = 2
         project.shortHook = "Watch this play"; project.media[0].shortFraming = ShortFraming(); project.media[0].shortFraming?.confirmed = true

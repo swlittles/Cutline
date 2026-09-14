@@ -4,6 +4,7 @@ import CutlineCore
 
 extension EditorStoreTests {
     func autoClipSeed() -> AutoClipReport {
+        try! store.saveCreatorProfile(ShortBranding(text: "example.test/player"))
         var media = MediaItem(url: fixture.appendingPathComponent("autoclip.mp4"), duration: 12)
         media.shortFraming = ShortFraming(); media.shortFraming?.confirmed = true
         store.project.shortHook = "Watch this play"

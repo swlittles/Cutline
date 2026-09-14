@@ -13,3 +13,7 @@ release-assets/
 .env*
 __pycache__/
 *.pyc
+
+# Local creator preferences must never be committed.
+creator-profile.json
+autoclip-profiles.json
