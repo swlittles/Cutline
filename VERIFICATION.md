@@ -97,3 +97,4 @@ Fresh installs have no creator branding or player aliases. Creator text and opti
 The privacy update passed 130 core/media tests, 51 hosted app tests and 18 release-tooling tests. Coverage includes fresh-install defaults, profile replacement/permissions, malformed files, invalid input, missing-brand export rejection, rendering cache separation, project privacy and configurable release destinations. Initial regression failures in two old identity-dependent fixtures were corrected to supply explicit fictional identities.
 
 The native creator-settings save/reopen/reset workflow and Dev updater-isolation test passed against the updated app.
+The automatic-candidate preview/append/undo and native folder batch-export workflows also passed with explicitly configured fictional branding (four targeted native UI workflows in total). Cutline Dev was rebuilt successfully.
