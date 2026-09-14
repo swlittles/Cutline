@@ -1,8 +1,8 @@
 {
-  "tag": "v0.3.0",
-  "version": "0.3.0",
-  "build": 5,
+  "tag": "v0.4.1",
+  "version": "0.4.1",
+  "build": 7,
   "mode": "signed",
-  "name": "Cutline-0.3.0-macos-universal",
-  "commit": "186a8408a2db80807ffdf3b1720ae2a2b1bf4b0b"
+  "name": "Cutline-0.4.1-macos-universal",
+  "commit": "d2bee155928e10c2d905e7d132feed3110f59303"
 }

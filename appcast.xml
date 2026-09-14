@@ -4,32 +4,25 @@ IMPORTANT: This file was signed by Sparkle. Any modifications to this file requi
     <channel>
         <title>Cutline</title>
         <item>
-            <title>0.3.0</title>
-            <pubDate>Sun, 13 Sep 2026 16:37:37 +0000</pubDate>
-            <sparkle:version>5</sparkle:version>
-            <sparkle:shortVersionString>0.3.0</sparkle:shortVersionString>
+            <title>0.4.1</title>
+            <pubDate>Mon, 14 Sep 2026 04:15:22 +0000</pubDate>
+            <sparkle:version>7</sparkle:version>
+            <sparkle:shortVersionString>0.4.1</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-            <description sparkle:format="markdown"><![CDATA[# Cutline 0.3.0
+            <description sparkle:format="markdown"><![CDATA[# Cutline 0.4.1
 
-First Developer ID signed and Apple-notarized macOS release of Cutline, an open-source video editor for game streamers.
+Privacy update for the public release: all game profiles now start with empty player aliases. Enter your own on-screen names before enabling local HUD OCR. Existing locally saved scan preferences remain on your Mac.
 
-- Native timeline editing, video/audio layers, transform and color controls, project recovery, and MP4 export.
-- Local automatic captions with whisper.cpp and FFmpeg; editable captions and SRT/WebVTT exchange.
-- Optional OpenRouter editing assistance and generated-media workflows.
-- Sparkle updates signed with a dedicated Cutline key and hosted on GitHub.
-- Separate Cutline Dev app for local work; release updates never replace it.
-- Notarized app and disk image, with stapled Apple tickets for distribution.
-- Extensive native UI, app-state and actual-media tests.
+Developer signing identity and GitHub publication destinations are configuration values, with no creator-specific defaults in the source. Historical personal identifiers have been removed from repository content and commit metadata.
 
-Requires macOS 14 or later. Universal binary includes Apple silicon and Intel; Intel runtime behavior has not been validated on physical hardware.
-Install FFmpeg and whisper.cpp separately for transcription and still-image conversion (`brew install ffmpeg whisper-cpp`). Models download from the Captions panel.
+The affected 0.4.0 download was withdrawn. This release retains the existing editing and automatic-clipping behavior; the new mobile composition and local branding Settings are being developed separately on dev.
 
-Developer-preview releases are ad-hoc signed and not notarized by Apple. Stable releases require Developer ID signing and notarization. Check the release tag and release.json for the artifact's mode. Cutline is an early development version and does not yet have full CapCut parity.
+Requires macOS 14 or later. Universal Apple silicon / Intel app, Developer ID signed and Apple-notarized. Local audio/motion/OCR clipping requires no paid AI API. Cutline remains an early development version without full CapCut parity.
 ]]></description>
-            <enclosure url="https://github.com/swlittles/Cutline/releases/download/v0.3.0/Cutline-0.3.0-macos-universal.zip" length="3165223" type="application/octet-stream" sparkle:edSignature="SsHZMr254WMv3eN+Qo+RfGHu824kIpnd25VSOABDY4JQEtqtR21LY4ixIn4XK4lYUQbIpaRmIThKPZPtq+zfDQ=="></enclosure>
+            <enclosure url="https://github.com/swlittles/Cutline/releases/download/v0.4.1/Cutline-0.4.1-macos-universal.zip" length="3430561" type="application/octet-stream" sparkle:edSignature="3MW7NhnY5kje7Ric7OHWy0taNeK1+lw9dpJuzMkizimHWgODJqRS8Nc6GXFWU2XQiBqt7Dr6Q7rdAp8DEHYkCw=="></enclosure>
         </item>
     </channel>
 </rss><!-- sparkle-signatures:
-edSignature: YGvG90RgSOyQvxDmcUjPdtaDeAhyzyCHEifK42zVfMWUnvzy/hv7yq/Wvn5OqVEJW/QExPUQRPzpg6UwtDpbDA==
-length: 2436
+edSignature: IuCZ8hOJMv2J63kBNIeltcC4bfH2SKMh4Y4hVsqQzqHPIetu3PujfwfDlBBRQ6W7QNaTOgXzaGVRW9nN0GgGBQ==
+length: 2050
 -->
