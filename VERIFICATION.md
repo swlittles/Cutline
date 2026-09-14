@@ -80,3 +80,16 @@ The first hosted macOS 15 run passed all 79 core and 34 hosted app tests, but fa
 
 
 The repeated macOS 15 keyboard tests captured `VKCImageTextSelectionView_macOS` taking first responder after caption edits. The editor preview now disables AVKit's automatic Live Text frame analysis; caption transcription remains unchanged. Delete is scoped to the focused timeline. A separate queued-player-callback issue was corrected so Pause and explicit seeks retain their playhead position. The current suite has 158 XCTest cases and 14 release-tooling tests; the latest complete results are in Actions.
+
+
+## 0.5 mobile layout verification (September 13)
+
+The development implementation separates Mobile Short (9:16) from YouTube Video (16:9). Short exports require confirmed per-source camera/gameplay crops and an editable hook. The native preview/export compositor renders 30% facecam, a permanent 2% black Kick.com/your-channel strip, and 68% gameplay. Hooks appear for the first three seconds of each timeline clip. Format-3 project files protect this behavior from being silently discarded by older apps.
+
+The updated SwiftPM core suite passed 124 tests, including an actual encoded-video assertion for branding and hook pixels during a fade. The final Xcode run passed all 124 core tests and 49 hosted app tests. All 51 native UI workflows passed in the full run, and the two workflows touched by the final hook/layout adjustments passed again against the final build. Fourteen release-tooling tests passed. The first Xcode core pass exposed a test-fixture URL that changed from relative to absolute during JSON decoding; fixture URLs were normalized and the complete core suite then passed. Result bundles are `.build/test-results/20260913-200648-all/Cutline.xcresult` (initial fixture failure, 51 passing UI workflows) and `.build/test-results/mobile-final-0.5.xcresult` (124 core, 49 app, 2 targeted UI tests, all passing).
+
+Twelve exact saved selections from the 3h13m VOD were re-rendered through CutlineCore, without rescanning or paid AI. All twelve outputs passed complete FFmpeg decoding and metadata checks: H.264 1080×1920 at 30 fps, 48 kHz AAC, durations matching the saved source ranges, and only the audience mix enabled. Source calibration remains local to the review project. Opening frames of all twelve were visually checked. The review directory contains MP4s, editable projects, a contact sheet, HTML review page and evidence manifest.
+
+These are review drafts: the shared opening hook is “Would you make this play?”, several detector ranges still exceed the channel’s preferred short length, and clip 12 opens on menu/loading footage (flagged as a likely false positive). This pass did not generate speech captions, normalize loudness, implement automatic camera detection, or establish editorial quality for every selection. Source framing is currently per recording; mixed OBS scenes require manual review. The earlier landscape files remain superseded diagnostics.
+
+Cutline Dev 0.5.0 was rebuilt and its ad-hoc signature verified. The older Dev process timed out during CUA access; restarting that development instance restored control. The mobile review project was opened in the new app and native playback visibly showed the 9:16 layout, Kick strip and draft hook. The user’s separate production app was left running.

@@ -65,7 +65,7 @@ struct GenerationPanel: View {
     }
     private func resetOptions() {
         guard let model else { return }
-        ratio = model.ratios.contains("16:9") ? "16:9" : model.ratios.first ?? ""
+        ratio = model.ratios.contains(store.project.outputFormat.label) ? store.project.outputFormat.label : model.ratios.first ?? ""
         resolution = model.resolutions.first ?? ""; duration = model.supported_durations?.first ?? 4
     }
     private func loadModels() {

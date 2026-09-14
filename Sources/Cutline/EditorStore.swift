@@ -21,7 +21,7 @@ final class EditorStore: ObservableObject {
     var clipExportTask: Task<Void, Never>?
     var clipJobID = UUID()
     var clipProfiles: [String: AutoClipSettings] = [:]
-    @Published var project = EditProject()
+    @Published var project = EditProject(workflow: .mobileShort)
     @Published var isTranscribing = false
     @Published var transcriptionProgress = 0.0
     @Published var transcriptionMessage = "Ready for local transcription"
@@ -58,7 +58,7 @@ final class EditorStore: ObservableObject {
     @Published var error: String?
     @Published var status = "Your next highlight starts here."
     @Published var projectURL: URL?
-    @Published var savedProject = EditProject()
+    @Published var savedProject = EditProject(workflow: .mobileShort)
     @Published var undoStack: [EditProject] = []
     @Published var redoStack: [EditProject] = []
     let player = AVPlayer()
@@ -250,7 +250,7 @@ final class EditorStore: ObservableObject {
     func newProject() {
         guard !isImporting, !isExporting, confirmDiscard() else { return }
         resetJobs()
-        project = EditProject(); status = "Your next highlight starts here."; savedProject = project; projectURL = nil
+        project = EditProject(workflow: .mobileShort); status = "Your next highlight starts here."; savedProject = project; projectURL = nil
         selectedClipID = nil; thumbnails = [:]; undoStack = []; redoStack = []; rebuild()
     }
     @discardableResult func save(as: Bool = false) -> Bool {
@@ -292,6 +292,7 @@ final class EditorStore: ObservableObject {
     }
     func exportVideo() {
         guard canExport, let render else { return }
+        do { try project.validateForExport() } catch { self.error = error.localizedDescription; return }
         let panel = NSSavePanel(); panel.allowedContentTypes = [.mpeg4Movie]
         panel.nameFieldStringValue = project.name + ".mp4"
         guard panel.runModal() == .OK, let destination = panel.url else { return }

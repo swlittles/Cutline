@@ -125,11 +125,13 @@ extension EditorStore {
             if projectEpoch == epoch { isThinking = false }
         }
     }
-    func applyHighlight(_ highlight: AIHighlight) {
+    func applyHighlight(_ highlight: AIHighlight, workflow: OutputWorkflow = .mobileShort) {
         guard project == aiSnapshot else { error = "The timeline changed since these suggestions were generated. Ask the assistant again."; return }
         do {
             var next = project; try next.keepTimelineRange(start: highlight.start, end: highlight.end)
             next.name = highlight.title
+            next.selectWorkflow(workflow)
+            if workflow == .mobileShort { next.shortHook = String(highlight.title.prefix(80)) }
             commit { $0 = next }; seek(0); aiProposal = nil; aiSnapshot = nil
             status = "Created highlight. Undo restores the full timeline."
         } catch { self.error = error.localizedDescription }

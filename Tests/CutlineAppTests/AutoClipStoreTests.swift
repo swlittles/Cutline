@@ -4,7 +4,9 @@ import CutlineCore
 
 extension EditorStoreTests {
     func autoClipSeed() -> AutoClipReport {
-        let media = MediaItem(url: fixture.appendingPathComponent("autoclip.mp4"), duration: 12)
+        var media = MediaItem(url: fixture.appendingPathComponent("autoclip.mp4"), duration: 12)
+        media.shortFraming = ShortFraming(); media.shortFraming?.confirmed = true
+        store.project.shortHook = "Watch this play"
         store.project.media = [media]; store.project.clips = []; store.project.options.resolution = 720
         let c = AutoClipCandidate(id: "one", start: 4, end: 8, score: 50, evidence: [ClipEvidence(time: 5, signal: .audio, detail: "Burst")])
         let report = AutoClipReport(media: media, settings: AutoClipSettings(), candidates: [c], evidence: c.evidence)
@@ -59,5 +61,43 @@ extension EditorStoreTests {
         store.clipSettings.hudCalibrated = true; store.clipMediaID = UUID(); XCTAssertFalse(store.clipSettings.hudCalibrated)
         store.clipSettings.hudCalibrated = true; store.selectClipGame(.valorant); XCTAssertFalse(store.clipSettings.hudCalibrated)
         store.clipSettings.hudCalibrated = true; store.resetJobs(); XCTAssertFalse(store.clipSettings.hudCalibrated)
+    }
+}
+
+extension EditorStoreTests {
+    func testShortAppendConvertsYouTubeAndPreservesEditableHook() {
+        let report = autoClipSeed(); store.project.selectWorkflow(.youtubeVideo)
+        store.project.autoClipHooks = ["one": "Custom moment"]
+        store.addAutoClip(report.candidates[0])
+        XCTAssertEqual(store.project.workflow, .mobileShort); XCTAssertEqual(store.project.outputFormat, .portrait)
+        XCTAssertEqual(store.project.clips.last?.shortHook, "Custom moment")
+        store.undo(); XCTAssertEqual(store.project.workflow, .youtubeVideo)
+    }
+    func testShortPreviewUsesUpdatedFramingWithoutRequiringRescan() throws {
+        let report = autoClipSeed(); store.project.media[0].shortFraming?.camera.x = 0.05
+        XCTAssertTrue(store.clipSourceUnchanged)
+        let preview = try store.preparedAutoClip(report.candidates[0], report: report)
+        XCTAssertEqual(preview.media[0].shortFraming, store.project.media[0].shortFraming)
+        XCTAssertEqual(preview.shortHook, "Watch this play"); XCTAssertEqual(preview.workflow, .mobileShort)
+    }
+    func testShortBatchMissingHookDoesNotWritePartialOutput() async throws {
+        let report = autoClipSeed(); store.project.shortHook = ""
+        store.exportAutoClips(to: root, report: report)
+        try await until { !self.store.isExportingClips }
+        XCTAssertTrue(store.error?.contains("hook") == true); XCTAssertNil(store.clipOutput)
+        XCTAssertFalse(try FileManager.default.contentsOfDirectory(atPath: root.path).contains { $0.hasPrefix("Cutline clips") || $0.hasPrefix(".cutline-clips") })
+    }
+}
+
+
+extension EditorStoreTests {
+    func testAppendedShortCanReceiveSharedHookLater() throws {
+        let report = autoClipSeed(); store.project.shortHook = nil
+        store.addAutoClip(report.candidates[0])
+        XCTAssertNil(store.project.clips[0].shortHook)
+        XCTAssertThrowsError(try store.project.validateForExport())
+        store.commit { $0.shortHook = "Set after adding the clip" }
+        XCTAssertNoThrow(try store.project.validateForExport())
+        XCTAssertEqual(store.project.hook(for: store.project.clips[0]), "Set after adding the clip")
     }
 }

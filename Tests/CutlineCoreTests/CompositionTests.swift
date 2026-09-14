@@ -66,7 +66,7 @@ final class CompositionTests: XCTestCase {
     }
     func testPortraitAnd60FPSExportMetadata() async throws {
         let root = try Fixtures.temporary(); defer { try? FileManager.default.removeItem(at: root) }
-        var p = Fixtures.project(); p.clips[0].sourceOut = 0.5; p.format = .portrait; p.options.fps = 60
+        var p = Fixtures.project(); p.clips[0].sourceOut = 0.5; p.selectWorkflow(.mobileShort); p.shortHook = "Watch the play"; p.media[0].shortFraming = ShortFraming(); p.media[0].shortFraming?.confirmed = true; p.options.fps = 60
         let url = root.appendingPathComponent("portrait.mp4"); let render = try await CompositionEngine.build(p)
         try await CompositionEngine.export(render, to: url)
         let asset = AVURLAsset(url: url), track = try await AVURLAsset(url: url).loadTracks(withMediaType: .video)[0]

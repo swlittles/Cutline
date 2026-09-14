@@ -5,6 +5,7 @@ extension EditorUITests {
     func prepareAutoClipRecording() throws {
         let media = MediaItem(url: fixture.appendingPathComponent("autoclip.mp4"), duration: 12)
         project.media = [media]; project.media[0].audioTrackCount = 2
+        project.shortHook = "Watch this play"; project.media[0].shortFraming = ShortFraming(); project.media[0].shortFraming?.confirmed = true
         project.clips = [TimelineClip(mediaID: media.id, sourceOut: 12)]; project.captionTrack = nil; project.transcripts = nil
         try project.write(to: projectURL)
     }
@@ -20,7 +21,7 @@ extension EditorUITests {
         try prepareAutoClipRecording(); launch(); tab("Clips"); scanAutomaticClips()
         let preview = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'clips.preview.'")).firstMatch
         reveal(preview, panel: "clips.scroll"); preview.click()
-        XCTAssertTrue(app.buttons["clips.previewPlay"].waitForExistence(timeout: 5)); app.buttons["clips.previewPlay"].click()
+        waitEnabled(app.buttons["clips.previewPlay"]); app.buttons["clips.previewPlay"].click()
         app.buttons["Done"].click()
         let add = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'clips.add.'")).firstMatch
         reveal(add, panel: "clips.scroll"); add.click()

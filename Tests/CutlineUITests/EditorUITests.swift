@@ -11,7 +11,7 @@ import CutlineCore
         continueAfterFailure = false
         root = FileManager.default.temporaryDirectory.appendingPathComponent("cutline-test-\(UUID())")
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
-        project = EditProject(); project.name = "UI test project"
+        project = EditProject(workflow: .youtubeVideo); project.name = "UI test project"
         let media = MediaItem(url: fixture.appendingPathComponent("gameplay.mp4"), duration: 5)
         let facecam = MediaItem(url: fixture.appendingPathComponent("facecam.mp4"), duration: 3)
         project.media = [media,facecam]; project.clips = [TimelineClip(mediaID: media.id, sourceOut: 5)]
@@ -130,7 +130,7 @@ import CutlineCore
         let result = try save(); XCTAssertEqual(result.clips[0].sourceIn, 1); XCTAssertEqual(result.clips[0].sourceOut, 4); XCTAssertEqual(result.clips[0].volume, 0)
     }
     func testCanvasResolutionAndFrameRatePersist() throws {
-        launch(); app.buttons["canvas.portrait"].click()
+        launch(); app.buttons["workflow.mobileShort"].click()
         app.popUpButtons["export.quality"].click(); app.menuItems["1080p"].click()
         app.popUpButtons["export.fps"].click(); app.menuItems["60"].click()
         let result = try save(); XCTAssertEqual(result.format, .portrait); XCTAssertEqual(result.options.fps, 60); XCTAssertEqual(result.options.resolution, 1080)

@@ -51,9 +51,10 @@ struct AIPanel: View {
                             Text(highlight.title).font(.system(size: 12, weight: .semibold))
                             Text("\(timecode(highlight.start)) – \(timecode(highlight.end))").font(.system(size: 10, design: .monospaced)).foregroundStyle(Studio.mint)
                             Text(highlight.reason).font(.system(size: 10)).foregroundStyle(Studio.muted)
-                            HStack {
+                            VStack(alignment: .leading, spacing: 6) {
                                 Button("Preview") { store.seek(highlight.start); store.togglePlayback() }
-                                Button("Keep this range") { store.applyHighlight(highlight) }
+                                Button("Make mobile short") { store.applyHighlight(highlight) }
+                                Button("Keep as YouTube video") { store.applyHighlight(highlight, workflow: .youtubeVideo) }
                             }.font(.system(size: 10))
                         }.padding(12).background(Studio.raised, in: RoundedRectangle(cornerRadius: 7))
                     }

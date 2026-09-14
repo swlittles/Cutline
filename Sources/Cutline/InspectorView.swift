@@ -3,26 +3,32 @@ import CutlineCore
 
 struct InspectorView: View {
     @EnvironmentObject var store: EditorStore
+    @State private var showFraming = false
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
                 Text("Inspector").font(.system(size: 13, weight: .semibold))
                 VStack(alignment: .leading, spacing: 12) {
-                    caption("CANVAS")
-                    HStack(spacing: 6) {
-                        ForEach(CanvasFormat.allCases) { format in
-                            Button { store.commit { $0.format = format } } label: {
-                                VStack(spacing: 8) {
-                                    RoundedRectangle(cornerRadius: 2).stroke(store.project.format == format ? Studio.mint : Studio.muted, lineWidth: 1.3)
-                                        .frame(width: format == .portrait ? 12 : 21, height: format == .landscape ? 12 : 21).frame(height: 23)
-                                    Text(format.label).font(.system(size: 10, weight: .medium))
-                                }.frame(maxWidth: .infinity).frame(height: 63)
-                                    .background(store.project.format == format ? Studio.mint.opacity(0.07) : Studio.raised, in: RoundedRectangle(cornerRadius: 6))
-                                    .overlay(RoundedRectangle(cornerRadius: 6).stroke(store.project.format == format ? Studio.mint.opacity(0.5) : .clear))
-                            }.buttonStyle(.plain).accessibilityIdentifier("canvas.\(format.rawValue)")
-                        }
+                    caption("OUTPUT WORKFLOW")
+                    ForEach(OutputWorkflow.allCases) { workflow in
+                        Button { store.commit { $0.selectWorkflow(workflow) } } label: {
+                            HStack {
+                                Image(systemName: store.project.workflow == workflow ? "checkmark.circle.fill" : "circle")
+                                Text(workflow.label)
+                            }.frame(maxWidth: .infinity, alignment: .leading).padding(8)
+                        }.accessibilityIdentifier("workflow.\(workflow.rawValue)")
                     }
-                    Text("\(Int(store.project.options.size(for: store.project.format).width)) × \(Int(store.project.options.size(for: store.project.format).height)) · \(store.project.options.fps) fps").font(.system(size: 10)).foregroundStyle(Studio.muted)
+                    if store.project.workflow == nil {
+                        Text("Older project: choose an output workflow before export.").foregroundStyle(.orange)
+                    }
+                    if store.project.workflow == .mobileShort {
+                        Text("30% facecam · 2% black Kick strip · 68% gameplay. Branding is always included.").foregroundStyle(Studio.muted)
+                        TextField("Required on-screen hook", text: Binding(get: { store.project.shortHook ?? "" }, set: { text in store.commit { $0.shortHook = text } }))
+                            .textFieldStyle(.roundedBorder).accessibilityIdentifier("short.hook")
+                        Text("Shown for the first 3 seconds of each clip. Up to 80 characters. Override individual clips below.").font(.caption).foregroundStyle(Studio.muted)
+                        Button("Short framing…") { showFraming = true }.accessibilityIdentifier("short.framing").disabled(store.project.media.isEmpty)
+                    }
+                    Text("\(Int(store.project.options.size(for: store.project.outputFormat).width)) × \(Int(store.project.options.size(for: store.project.outputFormat).height)) · \(store.project.options.fps) fps").font(.system(size: 10)).foregroundStyle(Studio.muted)
                     HStack {
                         Picker("Quality", selection: Binding(get: { store.project.options.resolution }, set: { v in store.commit { $0.options.resolution = v } })) {
                             Text("720p").tag(720); Text("1080p").tag(1080); Text("4K").tag(2160)
@@ -45,6 +51,7 @@ struct InspectorView: View {
                 Spacer(minLength: 0)
             }.padding(18)
         }.accessibilityIdentifier("inspector.scroll").background(Studio.panel)
+        .sheet(isPresented: $showFraming) { ShortFramingSheet().environmentObject(store) }
     }
     private func caption(_ text: String) -> some View { Text(text).font(.system(size: 9, weight: .medium)).tracking(1.2).foregroundStyle(Studio.muted) }
 }
@@ -59,6 +66,13 @@ struct ClipInspector: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("SELECTED CLIP").font(.system(size: 9)).tracking(1.2).foregroundStyle(Studio.muted)
+            if store.project.workflow == .mobileShort {
+                TextField("Hook override (optional)", text: Binding(get: { clip.shortHook ?? "" }, set: { text in
+                    store.commit { project in
+                        if let index = project.clips.firstIndex(where: { $0.id == clip.id }) { project.clips[index].shortHook = text.isEmpty ? nil : text }
+                    }
+                })).textFieldStyle(.roundedBorder).accessibilityIdentifier("short.clipHook")
+            }
             Text(media.name).font(.system(size: 13, weight: .medium)).lineLimit(2)
             valueRow("Timeline duration", timecode(clip.duration))
             Divider().overlay(Studio.line)

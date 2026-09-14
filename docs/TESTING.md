@@ -1,6 +1,6 @@
 # Automated testing
 
-Cutline has 203 XCTest cases across three layers: 111 core/media tests, 45 hosted application tests, and 47 native UI workflows, plus 14 Python release-tooling tests. `CutlineCoreTests` tests project invariants, subtitle/timeline transforms, provider transport, subprocesses, real AVFoundation composition and pixel output, and atomic export. `CutlineAppTests` hosts the actual application and tests EditorStore state, asynchronous work, undo/redo, persistence, and recovery. `CutlineUITests` drives the compiled macOS app through XCUITest, including native file dialogs, and reads the resulting project/media files to verify edits.
+Cutline has 224 XCTest cases across three layers: 124 core/media tests, 49 hosted application tests, and 51 native UI workflows, plus 14 Python release-tooling tests. `CutlineCoreTests` tests project invariants, subtitle/timeline transforms, provider transport, subprocesses, real AVFoundation composition and pixel output, and atomic export. `CutlineAppTests` hosts the actual application and tests EditorStore state, asynchronous work, undo/redo, persistence, and recovery. `CutlineUITests` drives the compiled macOS app through XCUITest, including native file dialogs, and reads the resulting project/media files to verify edits.
 
 ## Run
 
@@ -57,3 +57,5 @@ This table describes assertions in the suite. It does not imply exhaustive cover
 The GitHub runner sets its virtual display to 1920×1080 before native UI tests and checks the available point dimensions. This CI-only script refuses to run on a local desktop. Small virtual displays otherwise leave the editor controls outside the screen.
 
 Automatic clipping adds 32 core/media tests, eight app-state tests and five native UI workflows. The synthetic `autoclip.mp4` has a known 5–7 second audio burst and visual activity on one track, plus a quiet second audio track. Regenerate it with `scripts/generate-autoclip-fixture.sh`. A synthetic HUD image exercises actual macOS Vision OCR. These fixtures verify plumbing and rules, not real-game detection accuracy.
+
+Mobile output regression coverage includes legacy project classification, crop validation, per-clip hooks, pixel-aligned 30/2/68 geometry, source crop orientation, actual exported branding/hook pixels during fades, portrait metadata, scan identity after calibration, automatic preview/export consistency, and native workflow/hook/framing controls.

@@ -13,12 +13,14 @@ import CutlineCore
         let output = URL(fileURLWithPath: args[2], isDirectory: true)
         try FileManager.default.createDirectory(at: output, withIntermediateDirectories: true)
         let media = try await CompositionEngine.inspect(input)
-        var project = EditProject(); project.name = "Gameplay test"; project.media = [media]
+        var project = EditProject(workflow: .youtubeVideo); project.name = "Gameplay test"; project.media = [media]
         project.clips = [TimelineClip(mediaID: media.id, sourceIn: 0.5, sourceOut: 2.5, volume: 0.5)]
         guard project.split(at: 1) != nil else { throw EditError.invalid("Split failed") }
         project.clips.swapAt(0, 1)
-        for format in CanvasFormat.allCases {
-            project.format = format
+        for workflow in OutputWorkflow.allCases {
+            project.selectWorkflow(workflow)
+            project.shortHook = "Watch this play"; project.media[0].shortFraming = ShortFraming(); project.media[0].shortFraming?.confirmed = true
+            let format = workflow.format
             let render = try await CompositionEngine.build(project)
             guard abs(render.asset.duration.seconds - 2) < 0.01 else { throw EditError.invalid("Wrong composition duration") }
             let url = output.appendingPathComponent(format.rawValue + ".mp4")
@@ -86,7 +88,7 @@ import CutlineCore
         let video = try await StillImageClip.make(from: png, directory: output.appendingPathComponent("still-test"))
         let media = try await CompositionEngine.inspect(video)
         guard abs(media.duration - 5) < 0.05 else { throw EditError.invalid("Still clip has the wrong duration") }
-        var project = EditProject(); project.media = [media]; project.clips = [TimelineClip(mediaID: media.id, sourceOut: 5)]
+        var project = EditProject(workflow: .youtubeVideo); project.media = [media]; project.clips = [TimelineClip(mediaID: media.id, sourceOut: 5)]
         project.generateCaptions(from: SourceTranscript(mediaID: media.id, audioTrack: 0, language: "en", segments: [TranscriptSegment(start: 1, end: 4, text: "A still image with a transcript cut")]))
         try project.removeTimelineRanges([TimelineRange(start: 2, end: 3)])
         project.options.resolution = 720
@@ -101,7 +103,7 @@ import CutlineCore
             print("Local ASR: \(progress.message)")
         }
         guard !transcript.segments.isEmpty else { throw EditError.invalid("Local transcription returned no speech") }
-        var project = EditProject(); project.name = "Local caption verification"; project.media = [media]
+        var project = EditProject(workflow: .youtubeVideo); project.name = "Local caption verification"; project.media = [media]
         project.clips = [TimelineClip(mediaID: media.id, sourceOut: media.duration)]
         project.transcripts = [transcript]; project.generateCaptions(from: transcript)
         project.options.resolution = 720

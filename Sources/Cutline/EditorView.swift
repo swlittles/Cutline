@@ -134,7 +134,7 @@ struct EditorView: View {
             HStack {
                 Text("PLAYER").tracking(1.3)
                 Spacer()
-                Text(store.project.format.label).padding(.horizontal, 8).padding(.vertical, 4).background(Studio.raised, in: RoundedRectangle(cornerRadius: 4))
+                Text(store.project.outputFormat.label).padding(.horizontal, 8).padding(.vertical, 4).background(Studio.raised, in: RoundedRectangle(cornerRadius: 4))
                 Text("FIT").padding(.leading, 8)
             }.font(.system(size: 9, weight: .medium)).foregroundStyle(Studio.muted).padding(18)
             GeometryReader { geometry in
@@ -155,7 +155,7 @@ struct EditorView: View {
                         }.frame(maxWidth: .infinity, maxHeight: .infinity)
                     } else {
                         NativePlayer(player: store.player)
-                            .aspectRatio(store.project.format.size.width / store.project.format.size.height, contentMode: .fit)
+                            .aspectRatio(store.project.outputFormat.size.width / store.project.outputFormat.size.height, contentMode: .fit)
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                     }
                     if store.isBuilding { ProgressView("Preparing preview…").padding(18).background(Studio.panel.opacity(0.95), in: RoundedRectangle(cornerRadius: 8)) }

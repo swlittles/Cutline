@@ -21,6 +21,8 @@ public struct MediaItem: Codable, Identifiable, Equatable, Sendable {
     public var duration: Double
     public var audioTrackCount: Int?
     public var displayName: String?
+    public var shortFraming: ShortFraming?
+    public func sameSource(as other: MediaItem) -> Bool { id == other.id && url == other.url && duration == other.duration && audioTrackCount == other.audioTrackCount }
     public var name: String { displayName ?? url.deletingPathExtension().lastPathComponent }
     public init(id: UUID = UUID(), url: URL, duration: Double) {
         self.id = id; self.url = url; self.duration = duration
@@ -34,6 +36,7 @@ public struct TimelineClip: Codable, Identifiable, Equatable, Sendable {
     public var sourceOut: Double
     public var volume: Double
     public var adjustments: ClipAdjustments?
+    public var shortHook: String?
     public var speed: Double { adjustments?.speed ?? 1 }
     public var duration: Double { (sourceOut - sourceIn) / speed }
     public init(id: UUID = UUID(), mediaID: UUID, sourceIn: Double = 0, sourceOut: Double, volume: Double = 1) {
@@ -43,11 +46,14 @@ public struct TimelineClip: Codable, Identifiable, Equatable, Sendable {
 }
 
 public struct EditProject: Codable, Equatable, Sendable {
-    public var version = 2
+    public var version = 3
     public var name = "Untitled project"
     public var format: CanvasFormat = .landscape
     public var media: [MediaItem] = []
     public var clips: [TimelineClip] = []
+    public var workflow: OutputWorkflow?
+    public var shortHook: String?
+    public var autoClipHooks: [String: String]?
     public var settings: ProjectSettings?
     public var captionTrack: CaptionTrack?
     public var transcripts: [SourceTranscript]?
@@ -56,7 +62,9 @@ public struct EditProject: Codable, Equatable, Sendable {
     public var music: [AudioClip]?
     public var options: ProjectSettings { get { settings ?? ProjectSettings() } set { settings = newValue } }
     public var duration: Double { clips.reduce(0) { $0 + $1.duration } }
-    public init() {}
+    public init(workflow: OutputWorkflow? = .mobileShort) {
+        if let workflow { selectWorkflow(workflow) }
+    }
     public func start(of id: UUID) -> Double {
         var time = 0.0
         for clip in clips { if clip.id == id { return time }; time += clip.duration }
@@ -83,12 +91,13 @@ public struct EditProject: Codable, Equatable, Sendable {
         return nil
     }
     public func validate() throws {
-        guard (1...2).contains(version) else { throw EditError.invalid("This project uses an unsupported format version.") }
+        guard (1...3).contains(version) else { throw EditError.invalid("This project uses an unsupported format version.") }
         guard Set(media.map(\.id)).count == media.count, Set(clips.map(\.id)).count == clips.count else {
             throw EditError.invalid("The project contains duplicate identifiers.")
         }
         try validateExtras()
         for item in media {
+            try item.shortFraming?.validate()
             guard item.url.isFileURL, item.duration.isFinite, item.duration >= 0.1 else {
                 throw EditError.invalid("Invalid media metadata in this project.")
             }
@@ -105,7 +114,7 @@ public struct EditProject: Codable, Equatable, Sendable {
     public static func read(from url: URL) throws -> EditProject {
         var project = try JSONDecoder().decode(EditProject.self, from: Data(contentsOf: url))
         try project.validate()
-        project.version = 2
+        project.version = 3
         return project
     }
     public func write(to url: URL) throws {

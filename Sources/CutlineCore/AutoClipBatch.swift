@@ -2,7 +2,7 @@ import Foundation
 
 public enum AutoClipBatch {
     /// Each successful batch is a new directory. Failures and cancellation leave no half-published batch.
-    public static func export(report: AutoClipReport, candidates: [AutoClipCandidate], to parent: URL, options: ProjectSettings = ProjectSettings(), progress: @escaping @Sendable (ClipScanProgress) -> Void = { _ in }) async throws -> URL {
+    public static func export(report: AutoClipReport, candidates: [AutoClipCandidate], to parent: URL, options: ProjectSettings = ProjectSettings(), hooks: [String: String] = [:], progress: @escaping @Sendable (ClipScanProgress) -> Void = { _ in }) async throws -> URL {
         guard parent.isFileURL, !candidates.isEmpty, candidates.count <= 100 else { throw EditError.invalid("Select clips and a local output folder.") }
         let token = UUID().uuidString
         let staging = parent.appendingPathComponent(".cutline-clips-\(token)", isDirectory: true)
@@ -15,6 +15,8 @@ public enum AutoClipBatch {
             try Task.checkCancellation()
             var project = try AutoClipRules.project(for: candidate, media: report.media, outputAudioTrack: report.settings.outputAudioTrack)
             project.options = options
+            project.shortHook = hooks[candidate.id]
+            try project.validateForExport()
             let stem = String(format: "%02d", index + 1) + " - " + candidate.title.replacingOccurrences(of: ":", with: "-")
             let render = try await CompositionEngine.build(project)
             try await CompositionEngine.export(render, to: staging.appendingPathComponent(stem + ".mp4")) { value in

@@ -206,7 +206,7 @@ public enum AutoClipRules {
     public static func project(for candidate: AutoClipCandidate, media: MediaItem, outputAudioTrack: Int = 0) throws -> EditProject {
         guard candidate.start.isFinite, candidate.end.isFinite, candidate.start >= 0, candidate.end <= media.duration, candidate.end > candidate.start else { throw EditError.invalid("Invalid automatic clip range.") }
         guard (0..<64).contains(outputAudioTrack), outputAudioTrack < max(1, media.audioTrackCount ?? 64) else { throw EditError.invalid("Choose an available export audio track.") }
-        var project = EditProject(); project.name = candidate.title; project.media = [media]
+        var project = EditProject(workflow: .mobileShort); project.name = candidate.title; project.media = [media]
         project.clips = [TimelineClip(mediaID: media.id, sourceIn: candidate.start, sourceOut: candidate.end)]
         var adjustments = ClipAdjustments()
         // OBS audience mix and isolated tracks often contain the same sound. Export exactly one.

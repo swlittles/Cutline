@@ -6,6 +6,7 @@ struct AutoClipPanel: View {
     @EnvironmentObject var store: EditorStore
     @State private var preview: AutoClipCandidate?
     @State private var showRegions = false
+    @State private var showFraming = false
     var busy: Bool { store.isScanningClips || store.isExportingClips }
     var body: some View {
         ScrollView {
@@ -35,7 +36,7 @@ struct AutoClipPanel: View {
                         Text("\(store.selectedAutoClips.count) selected · source timecodes").accessibilityIdentifier("clips.selection")
                         Button("Export selected clips…", action: store.exportAutoClips).accessibilityIdentifier("clips.export")
                             .disabled(busy || store.selectedAutoClips.isEmpty || !store.clipSourceUnchanged)
-                        Text("Creates separate 16:9 MP4s and editable projects from the source, using your export resolution and frame rate. Timeline effects are not included.").foregroundStyle(Studio.muted)
+                        Text("Creates separate 9:16 mobile shorts: 30% facecam, 2% black Kick strip, 68% gameplay. Every clip needs a hook and checked source crops. Timeline effects are not included.").foregroundStyle(Studio.muted)
                         ForEach(report.candidates) { candidate in candidateCard(candidate).disabled(busy || !store.clipSourceUnchanged) }
                     }
                     DisclosureGroup("Scan details") {
@@ -52,8 +53,9 @@ struct AutoClipPanel: View {
         }.accessibilityIdentifier("clips.scroll")
             .onChange(of: store.clipMedia?.id) { _, _ in store.clipSettings.hudCalibrated = false }
             .sheet(item: $preview) { candidate in
-                if let media = store.clipReport?.media { ClipPreviewSheet(media: media, candidate: candidate) }
+                if let report = store.clipReport { ClipPreviewSheet(project: try? store.preparedAutoClip(candidate, report: report), candidate: candidate) }
             }
+            .sheet(isPresented: $showFraming) { ShortFramingSheet().environmentObject(store) }
             .sheet(isPresented: $showRegions) { if let media = store.clipMedia { ClipRegionSheet(media: media).environmentObject(store) } }
     }
     private var configuration: some View {
@@ -102,6 +104,7 @@ struct AutoClipPanel: View {
                     Toggle("I checked the HUD region on this recording", isOn: $store.clipSettings.hudCalibrated).accessibilityIdentifier("clips.calibrated")
                 }.padding(.top, 8)
             }
+            Button("Short framing…") { showFraming = true }.accessibilityIdentifier("clips.shortFraming")
             Button("Preview / calibrate regions…") { showRegions = true }.accessibilityIdentifier("clips.regions")
         }
     }
@@ -109,6 +112,9 @@ struct AutoClipPanel: View {
         VStack(alignment: .leading, spacing: 8) {
             Toggle(candidate.title, isOn: Binding(get: { store.selectedAutoClips.contains(candidate.id) }, set: { selected in if selected { store.selectedAutoClips.insert(candidate.id) } else { store.selectedAutoClips.remove(candidate.id) } })).accessibilityIdentifier("clips.select.\(candidate.id)")
             Text("\(timecode(candidate.start)) – \(timecode(candidate.end)) · score \(Int(candidate.score))").monospacedDigit().foregroundStyle(Studio.mint)
+            TextField("Required on-screen hook", text: Binding(get: { store.autoClipHook(candidate.id) }, set: { text in
+                store.commit { project in if project.autoClipHooks == nil { project.autoClipHooks = [:] }; project.autoClipHooks?[candidate.id] = text }
+            })).textFieldStyle(.roundedBorder).accessibilityIdentifier("clips.hook.\(candidate.id)")
             HStack {
                 Button("Preview") { preview = candidate }.accessibilityIdentifier("clips.preview.\(candidate.id)")
                 Button("Add to timeline") { store.addAutoClip(candidate) }.accessibilityIdentifier("clips.add.\(candidate.id)")
@@ -126,26 +132,30 @@ struct AutoClipPanel: View {
 }
 
 struct ClipPreviewSheet: View {
-    let media: MediaItem
+    let project: EditProject?
     let candidate: AutoClipCandidate
     @Environment(\.dismiss) var dismiss
     @State private var player = AVPlayer()
-    @State private var observer: Any?
+    @State private var error: String?
     var body: some View {
-        VStack(spacing: 14) {
+        VStack(spacing: 12) {
             Text(candidate.title).font(.headline)
-            NativePlayer(player: player).frame(width: 760, height: 428)
-            Text("\(timecode(candidate.start)) – \(timecode(candidate.end)) in \(media.name)").font(.caption)
+            NativePlayer(player: player).frame(width: 304, height: 540)
+            Text("Mobile Short · 9:16 · Kick.com/your-channel").font(.caption)
+            if let error { Text(error).foregroundStyle(.orange).frame(maxWidth: 400) }
             HStack {
-                Button("Play clip") { player.seek(to: CMTime(seconds: candidate.start, preferredTimescale: 600), toleranceBefore: .zero, toleranceAfter: .zero) { _ in player.play() } }.accessibilityIdentifier("clips.previewPlay")
+                Button("Play clip") { player.seek(to: .zero, toleranceBefore: .zero, toleranceAfter: .zero) { _ in player.play() } }.accessibilityIdentifier("clips.previewPlay").disabled(player.currentItem == nil)
                 Button("Pause") { player.pause() }
                 Button("Done") { dismiss() }.keyboardShortcut(.cancelAction)
             }
-        }.padding(24).onAppear {
-            player.replaceCurrentItem(with: AVPlayerItem(url: media.url))
-            player.seek(to: CMTime(seconds: candidate.start, preferredTimescale: 600), toleranceBefore: .zero, toleranceAfter: .zero)
-            observer = player.addBoundaryTimeObserver(forTimes: [NSValue(time: CMTime(seconds: candidate.end, preferredTimescale: 600))], queue: .main) { player.pause() }
-        }.onDisappear { player.pause(); if let observer { player.removeTimeObserver(observer) }; observer = nil }
+        }.padding(20).task {
+            guard let project else { error = "The clip could not be prepared."; return }
+            do {
+                let render = try await CompositionEngine.build(project); try Task.checkCancellation()
+                player.replaceCurrentItem(with: render.playerItem())
+                do { try project.validateForExport() } catch { self.error = error.localizedDescription }
+            } catch { self.error = error.localizedDescription }
+        }.onDisappear { player.pause(); player.replaceCurrentItem(with: nil) }
     }
 }
 

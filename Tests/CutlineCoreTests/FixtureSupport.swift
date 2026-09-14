@@ -13,9 +13,9 @@ enum Fixtures {
         return FileManager.default.fileExists(atPath: folder.path) ? folder : root
         #endif
     }
-    static func url(_ name: String) -> URL { directory.appendingPathComponent(name) }
+    static func url(_ name: String) -> URL { directory.appendingPathComponent(name).absoluteURL }
     static func project() -> EditProject {
-        var project = EditProject()
+        var project = EditProject(workflow: .youtubeVideo)
         let media = MediaItem(url: url("gameplay.mp4"), duration: 5)
         project.media = [media]; project.clips = [TimelineClip(mediaID: media.id, sourceOut: 5)]
         project.options.resolution = 720

@@ -62,7 +62,7 @@ final class CaptionTests: XCTestCase {
         defer { try? FileManager.default.removeItem(at: url) }
         try json.write(to: url, atomically: true, encoding: .utf8)
         let project = try EditProject.read(from: url)
-        XCTAssertEqual(project.version, 2); XCTAssertEqual(project.options.fps, 30)
+        XCTAssertEqual(project.version, 3); XCTAssertEqual(project.options.fps, 30)
     }
     func testKeyframeInterpolationAndBounds() {
         var adjustments = ClipAdjustments()

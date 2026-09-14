@@ -129,11 +129,12 @@ final class AutoClipTests: XCTestCase {
         let media = MediaItem(url: Fixtures.url("autoclip.mp4"), duration: 12)
         var c = AutoClipCandidate(id: "test", start: 4, end: 8, score: 10, evidence: [event(5)])
         let p = try AutoClipRules.project(for: c, media: media)
-        XCTAssertEqual(p.duration, 4); XCTAssertEqual(p.clips[0].sourceIn, 4); XCTAssertEqual(p.format, .landscape)
+        XCTAssertEqual(p.duration, 4); XCTAssertEqual(p.clips[0].sourceIn, 4); XCTAssertEqual(p.format, .portrait)
         c.end = 15; XCTAssertThrowsError(try AutoClipRules.project(for: c, media: media))
     }
     func testRealRecordingAudioVisionAndTrackIsolation() async throws {
-        let media = try await CompositionEngine.inspect(Fixtures.url("autoclip.mp4").absoluteURL)
+        var media = try await CompositionEngine.inspect(Fixtures.url("autoclip.mp4").absoluteURL)
+        media.shortFraming = ShortFraming(); media.shortFraming?.confirmed = true
         var s = AutoClipSettings(); s.lead = 1; s.tail = 1
         let report = try await ClipMediaScanner.scan(media: media, settings: s)
         XCTAssertEqual(report.candidates.count, 1); XCTAssertGreaterThan(report.sampledFrames, 20); XCTAssertEqual(report.ocrReads, 0)
@@ -157,11 +158,12 @@ final class AutoClipTests: XCTestCase {
     }
     func testBatchProducesPlayableVideoProjectsAndEvidenceWithoutOverwriting() async throws {
         let root = try Fixtures.temporary(); defer { try? FileManager.default.removeItem(at: root) }
-        let media = try await CompositionEngine.inspect(Fixtures.url("autoclip.mp4").absoluteURL)
+        var media = try await CompositionEngine.inspect(Fixtures.url("autoclip.mp4").absoluteURL)
+        media.shortFraming = ShortFraming(); media.shortFraming?.confirmed = true
         let c = AutoClipCandidate(id: "one", start: 4, end: 8, score: 20, evidence: [event(5)])
         let report = AutoClipReport(media: media, settings: AutoClipSettings(), candidates: [c], evidence: c.evidence)
         var options = ProjectSettings(); options.resolution = 720
-        let output = try await AutoClipBatch.export(report: report, candidates: [c], to: root, options: options)
+        let output = try await AutoClipBatch.export(report: report, candidates: [c], to: root, options: options, hooks: [c.id: "Watch this play"])
         let files = try FileManager.default.contentsOfDirectory(at: output, includingPropertiesForKeys: nil)
         let video = try XCTUnwrap(files.first { $0.pathExtension == "mp4" })
         let exported = try await CompositionEngine.inspect(video); XCTAssertEqual(exported.duration, 4, accuracy: 0.1)

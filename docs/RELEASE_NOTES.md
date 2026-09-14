@@ -1,15 +1,15 @@
-# Cutline 0.4.0
+# Cutline 0.5.0
 
-Automatic local clipping for game recordings, with no OpenRouter calls or AI API costs.
+Mobile shorts now have their own required composition, separate from YouTube long-form videos.
 
-- New Clips workspace: measure audio bursts and sustained frame changes across a recording, then group activity into padded, non-overlapping clips.
-- Optional local HUD OCR with game profiles for Valorant, Counter-Strike 2 and Rainbow Six Siege; editable player aliases and visual region calibration. WARDOGS and Tarkov use audio/motion/markers unless a usable feed is calibrated.
-- Select an isolated OBS audio track, adjust thresholds and timing, and inspect the measured evidence for every candidate.
-- Preview clips, append them to the timeline with undo, or batch-export independent MP4s, editable projects and an analysis report.
-- Cancellation and source-change checks, plus synthetic signal, real-media, OCR, app-state and native UI tests.
+- New projects default to **Mobile Short · 9:16**. **YouTube Video · 16:9** is an explicit Inspector choice.
+- Every short uses 30% facecam, a 2% black strip with the Kick mark and `Kick.com/your-channel`, and 68% gameplay. Branding remains visible through effects, fades, overlays and captions.
+- Set a required opening hook in the Inspector or on each automatic clip. Individual timeline clips can override the shared hook; the hook appears for the first three seconds of each clip.
+- Check facecam and gameplay crops against each recording in **Short framing**. A Fit option preserves a full gameplay region for chess or HUD-heavy scenes.
+- Automatic candidate preview and export now use the same native portrait compositor. Automatic timeline insertion selects the mobile workflow, with undo. AI suggestions have separate mobile-short and YouTube-video actions.
+- Older projects keep their framing on open and require an output choice before export. New version-3 project files preserve hooks and crops and are rejected by older apps instead of silently losing the layout.
+- Additional model, pixel-rendering, export, app-state and native UI regression tests cover these workflows.
 
-Requires macOS 14 or later. Universal Apple silicon / Intel app, Developer ID signed and Apple-notarized. Existing installations can use Check for Updates; Cutline Dev stays separate.
+Requires macOS 14 or later. Cutline Dev remains a separate local app with its updater disabled. Production packaging continues through the existing signed/notarized main-branch release workflow.
 
-Automatic clipping uses AVFoundation and optional built-in macOS OCR. It needs no FFmpeg, transcript, downloaded model or API key. Captions still use separately installed FFmpeg/whisper.cpp. Batch clips preserve the source field of view in 16:9; timeline effects are not copied.
-
-Review candidates before sharing: loudness, motion and OCR are fallible activity indicators. No real-game precision/recall or multi-hour 4K performance claim is made. Cutline remains an early development version without full CapCut parity.
+Local automatic clipping makes no OpenRouter calls. Captions still use separately installed FFmpeg/whisper.cpp. Crop calibration is currently per recording; mixed OBS scenes need manual checking. Hooks are editable text, not automatically inferred. Review detection results and tighten their timing before posting. Cutline remains an early development version without full CapCut parity.

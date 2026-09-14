@@ -48,7 +48,7 @@ extension EditorUITests {
         launch(); try requestSuggestions()
         textExists("A strong team highlight.")
         XCTAssertEqual(try EditProject.read(from: projectURL).duration, 5)
-        let apply = app.buttons["Keep this range"]; reveal(apply, panel: "ai.scroll"); apply.click()
+        let apply = app.buttons["Make mobile short"]; reveal(apply, panel: "ai.scroll"); apply.click()
         let result = try save(); XCTAssertEqual(result.duration, 2.5, accuracy: 0.001)
         app.typeKey("z", modifierFlags: .command); XCTAssertEqual(try save().duration, 5)
     }
@@ -72,7 +72,7 @@ extension EditorUITests {
         launch(); try requestSuggestions(mode: "slow")
         let cancel = app.buttons["Cancel"]; XCTAssertTrue(cancel.waitForExistence(timeout: 5)); if let panel = panelContaining(cancel) { reveal(cancel, panel: panel) }; cancel.click()
         waitEnabled(app.buttons["Generate suggestions"])
-        XCTAssertFalse(app.buttons["Keep this range"].exists)
+        XCTAssertFalse(app.buttons["Make mobile short"].exists)
         XCTAssertEqual(try save().clips, project.clips)
     }
     func testCredentialRemovalDisablesAssistant() throws {
@@ -168,7 +168,7 @@ extension EditorUITests {
         let result = try save(); XCTAssertEqual(result.clips[0].adjustments?.mirror, true); XCTAssertEqual(result.clips[0].adjustments?.keyframes?.count, 1)
     }
     func testNewProjectCancelAndDiscardProtectEdits() throws {
-        launch(); app.buttons["canvas.square"].click(); app.typeKey("n", modifierFlags: .command)
+        launch(); app.buttons["workflow.mobileShort"].click(); app.typeKey("n", modifierFlags: .command)
         let cancel = app.dialogs.buttons["Cancel"].firstMatch; XCTAssertTrue(cancel.waitForExistence(timeout: 5)); if let panel = panelContaining(cancel) { reveal(cancel, panel: panel) }; cancel.click()
         assertLabel("timeline.count", "1 clips")
         app.typeKey("n", modifierFlags: .command); app.dialogs.buttons["Discard"].firstMatch.click()

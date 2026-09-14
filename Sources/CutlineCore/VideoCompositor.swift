@@ -24,7 +24,10 @@ final class FrameInstruction: NSObject, AVVideoCompositionInstructionProtocol, @
     let captions: [ProjectedCaption]
     let captionStyle: CaptionStyle
     let sourceIn: Double
-    init(range: CMTimeRange, main: LayerRecipe, overlays: [LayerRecipe], adjustments: ClipAdjustments, captions: [ProjectedCaption], style: CaptionStyle, sourceIn: Double) {
+    let shortFraming: ShortFraming?
+    let hook: String
+    init(range: CMTimeRange, main: LayerRecipe, overlays: [LayerRecipe], adjustments: ClipAdjustments, captions: [ProjectedCaption], style: CaptionStyle, sourceIn: Double, shortFraming: ShortFraming? = nil, hook: String = "") {
+        self.shortFraming = shortFraming; self.hook = hook
         timeRange = range; self.main = main; self.overlays = overlays; self.adjustments = adjustments
         self.captions = captions; captionStyle = style; self.sourceIn = sourceIn
         requiredSourceTrackIDs = ([main] + overlays).map { NSNumber(value: $0.trackID) }
@@ -71,7 +74,11 @@ public final class CutlineVideoCompositor: NSObject, AVVideoCompositing, @unchec
                 let seconds = request.compositionTime.seconds
                 var image = Self.oriented(CIImage(cvPixelBuffer: source), preferred: instruction.main.transform)
                 let a = instruction.adjustments.interpolated(at: instruction.sourceIn + (seconds - instruction.timeRange.start.seconds) * instruction.adjustments.speed)
-                image = Self.place(image, in: canvas, fill: a.fill, zoom: a.zoom, x: a.x, y: a.y, rotation: a.rotation, mirror: a.mirror)
+                if let framing = instruction.shortFraming {
+                    image = Self.shortPanels(image, framing: framing, canvas: canvas, adjustments: a)
+                } else {
+                    image = Self.place(image, in: canvas, fill: a.fill, zoom: a.zoom, x: a.x, y: a.y, rotation: a.rotation, mirror: a.mirror)
+                }
                 image = image.applyingFilter("CIColorControls", parameters: [kCIInputBrightnessKey: a.brightness, kCIInputContrastKey: a.contrast, kCIInputSaturationKey: a.saturation])
                 let elapsed = seconds - instruction.timeRange.start.seconds
                 let remaining = instruction.timeRange.end.seconds - seconds
@@ -93,6 +100,18 @@ public final class CutlineVideoCompositor: NSObject, AVVideoCompositing, @unchec
                     let transform = CGAffineTransform(translationX: (canvas.width - textImage.extent.width) / 2, y: canvas.height * instruction.captionStyle.bottom)
                     image = textImage.transformed(by: transform).composited(over: image)
                 }
+                if instruction.shortFraming != nil {
+                    // Applied last: transforms, fades, overlays and captions cannot hide the mandatory branding.
+                    let geometry = ShortGeometry(size: canvas.size)
+                    image = shortBrand(size: geometry.brand.size).transformed(by: CGAffineTransform(translationX: 0, y: geometry.brand.minY)).composited(over: image)
+                    if elapsed < min(3, instruction.timeRange.duration.seconds), !instruction.hook.isEmpty {
+                        var style = CaptionStyle(); style.fontSize = 54; style.colorHex = "FFDF00"; style.background = true
+                        if let bitmap = captionImage(instruction.hook, style: style, canvas: canvas.size) {
+                            let hook = CIImage(cgImage: bitmap)
+                            image = hook.transformed(by: CGAffineTransform(translationX: (canvas.width - hook.extent.width) / 2, y: geometry.gameplay.maxY - hook.extent.height - canvas.height * 0.012)).composited(over: image)
+                        }
+                    }
+                }
                 context.render(image.cropped(to: canvas), to: destination, bounds: canvas, colorSpace: colorSpace)
                 request.finish(withComposedVideoFrame: destination)
             }
@@ -111,7 +130,7 @@ public final class CutlineVideoCompositor: NSObject, AVVideoCompositing, @unchec
         let normalized = transformed.transformed(by: CGAffineTransform(translationX: -transformed.extent.minX, y: -transformed.extent.minY))
         return normalized.transformed(by: CGAffineTransform(a: 1, b: 0, c: 0, d: -1, tx: 0, ty: normalized.extent.height))
     }
-    private static func place(_ image: CIImage, in canvas: CGRect, fill: Bool, zoom: Double = 1, x: Double = 0, y: Double = 0, rotation: Double = 0, mirror: Bool = false) -> CIImage {
+    static func place(_ image: CIImage, in canvas: CGRect, fill: Bool, zoom: Double = 1, x: Double = 0, y: Double = 0, rotation: Double = 0, mirror: Bool = false) -> CIImage {
         let size = image.extent.size
         let fit = fill ? max(canvas.width / size.width, canvas.height / size.height) : min(canvas.width / size.width, canvas.height / size.height)
         var t = CGAffineTransform(translationX: -size.width / 2, y: -size.height / 2)
@@ -151,4 +170,40 @@ public final class CutlineVideoCompositor: NSObject, AVVideoCompositing, @unchec
         bitmapCache.setObject(CaptionBitmap(bitmap), forKey: key, cost: width * height * 4)
         return bitmap
     }
+    static func shortPanels(_ source: CIImage, framing: ShortFraming, canvas: CGRect, adjustments a: ClipAdjustments = ClipAdjustments()) -> CIImage {
+        let geometry = ShortGeometry(size: canvas.size)
+        func crop(_ region: ClipScanRegion) -> CIImage {
+            let rect = CGRect(x: source.extent.minX + region.x * source.extent.width,
+                              y: source.extent.minY + (1 - region.y - region.height) * source.extent.height,
+                              width: region.width * source.extent.width, height: region.height * source.extent.height)
+            return source.cropped(to: rect).transformed(by: CGAffineTransform(translationX: -rect.minX, y: -rect.minY))
+        }
+        let background = CIImage(color: .black).cropped(to: canvas)
+        let gameplay = place(crop(framing.gameplay), in: geometry.gameplay, fill: !framing.containGameplay, zoom: a.zoom, x: a.x, y: a.y, rotation: a.rotation, mirror: a.mirror)
+        let camera = place(crop(framing.camera), in: geometry.camera, fill: true)
+        return camera.composited(over: gameplay.composited(over: background))
+    }
+    func shortBrand(size: CGSize) -> CIImage {
+        let key = "mandatory-kick-brand-\(size)" as NSString
+        if let cached = bitmapCache.object(forKey: key) { return CIImage(cgImage: cached.image) }
+        let width = Int(size.width), height = Int(size.height)
+        guard let cg = CGContext(data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0, space: colorSpace, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return CIImage(color: .black).cropped(to: CGRect(origin: .zero, size: size)) }
+        cg.setFillColor(CGColor(gray: 0, alpha: 1)); cg.fill(CGRect(origin: .zero, size: size))
+        let font = NSFont.systemFont(ofSize: size.height * 0.70, weight: .bold)
+        let line = CTLineCreateWithAttributedString(NSAttributedString(string: "Kick.com/your-channel", attributes: [.font: font, .foregroundColor: NSColor.white]))
+        var ascent: CGFloat = 0, descent: CGFloat = 0
+        let textWidth = CTLineGetTypographicBounds(line, &ascent, &descent, nil)
+        let logoSize = size.height * 0.74, gap = size.height * 0.25
+        let left = (size.width - textWidth - gap - logoSize) / 2
+        // Exact Kick mark path from reference-editor/packages/clipper/assets/short-brand-container.svg.
+        let points: [(CGFloat, CGFloat)] = [(1.333,0),(9.333,0),(9.333,5.333),(12,5.333),(12,2.667),(14.667,2.667),(14.667,0),(22.667,0),(22.667,8),(20,8),(20,10.667),(17.333,10.667),(17.333,13.333),(20,13.333),(20,16),(22.667,16),(22.667,24),(14.667,24),(14.667,21.333),(12,21.333),(12,18.667),(9.333,18.667),(9.333,24),(1.333,24)]
+        cg.saveGState(); cg.translateBy(x: left, y: (size.height + logoSize)/2); cg.scaleBy(x: logoSize/24, y: -logoSize/24)
+        cg.setFillColor(CGColor(red: 83/255, green: 252/255, blue: 24/255, alpha: 1))
+        cg.move(to: CGPoint(x: points[0].0, y: points[0].1)); for p in points.dropFirst() { cg.addLine(to: CGPoint(x: p.0, y: p.1)) }; cg.closePath(); cg.fillPath(); cg.restoreGState()
+        cg.textPosition = CGPoint(x: left + logoSize + gap, y: (size.height - ascent - descent)/2 + descent); CTLineDraw(line, cg)
+        guard let bitmap = cg.makeImage() else { return CIImage(color: .black).cropped(to: CGRect(origin: .zero, size: size)) }
+        bitmapCache.setObject(CaptionBitmap(bitmap), forKey: key, cost: width * height * 4)
+        return CIImage(cgImage: bitmap)
+    }
+
 }
