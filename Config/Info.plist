@@ -37,6 +37,8 @@
 	<string>8</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Cutline turns the speech in your clips into captions, on this Mac.</string>
 	<key>UTExportedTypeDeclarations</key>
 	<array>
 		<dict>

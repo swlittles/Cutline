@@ -1,7 +1,7 @@
 import Foundation
 
 /// Coordinates are fractions of the displayed source frame, measured from its top-left.
-public struct ClipScanRegion: Codable, Equatable, Sendable {
+public struct ClipScanRegion: Codable, Hashable, Sendable {
     public var x: Double, y: Double, width: Double, height: Double
     public init(x: Double = 0, y: Double = 0, width: Double = 1, height: Double = 1) {
         self.x = x; self.y = y; self.width = width; self.height = height
@@ -33,6 +33,8 @@ public struct AutoClipSettings: Codable, Equatable, Sendable {
     /// Zero-based index into the source's audio tracks, never an implicit mix.
     public var audioTrack = 0
     public var outputAudioTrack = 0
+    /// Tracks mixed into exports. `nil` keeps older settings on `outputAudioTrack` alone.
+    public var outputAudioTracks: [Int]?
     public var audioRiseDB = 8.0
     public var audioFloorDB = -35.0
     public var motionThreshold = 0.07
@@ -58,7 +60,7 @@ public struct AutoClipSettings: Codable, Equatable, Sendable {
     }
     public func validate() throws {
         guard audioEnabled || visionEnabled || useOCR else { throw EditError.invalid("Enable audio, frame changes, or HUD OCR.") }
-        guard audioTrack >= 0, audioTrack < 64, outputAudioTrack >= 0, outputAudioTrack < 64, (1...5).contains(sampleFPS), (3...30).contains(audioRiseDB), (-80...0).contains(audioFloorDB),
+        guard audioTrack >= 0, audioTrack < 64, !exportTracks.isEmpty, exportTracks.allSatisfy({ (0..<64).contains($0) }), (1...5).contains(sampleFPS), (3...30).contains(audioRiseDB), (-80...0).contains(audioFloorDB),
               (0.01...0.4).contains(motionThreshold), (0...30).contains(lead), (0...30).contains(tail),
               (1...30).contains(encounterGap), (3...180).contains(maxDuration), lead + tail < maxDuration,
               (1...100).contains(maxClips), (1...10).contains(minimumKills), hud.valid, motionRegion.valid else {
@@ -68,6 +70,7 @@ public struct AutoClipSettings: Codable, Equatable, Sendable {
             throw EditError.invalid("Set your player aliases and confirm the HUD region before enabling OCR.")
         }
     }
+    public var exportTracks: [Int] { outputAudioTracks.map { Array(Set($0)).sorted() } ?? [outputAudioTrack] }
     public var playerNames: [String] { aliases.components(separatedBy: CharacterSet(charactersIn: ",\n")).map(Self.normalizeName).filter { !$0.isEmpty && $0 != "you" } }
     public static func normalizeName(_ name: String) -> String { name.precomposedStringWithCompatibilityMapping.lowercased().split(whereSeparator: \.isWhitespace).joined(separator: " ") }
 }
@@ -100,7 +103,10 @@ public struct AutoClipCandidate: Codable, Equatable, Identifiable, Sendable {
     }
     public var title: String {
         let kills = evidence.filter { $0.signal == .elimination }.count
-        return kills > 0 ? "\(kills) HUD elimination match\(kills == 1 ? "" : "es")" : evidence.contains { $0.signal == .marker } ? "Marked moment" : "Activity at \(timecode(evidence.first?.time ?? start))"
+        if kills > 0 { return kills == 1 ? "1 elimination" : "\(kills) eliminations" }
+        if evidence.contains(where: { $0.signal == .marker }) { return "Marked moment" }
+        let loud = evidence.contains { $0.signal == .audio }, busy = evidence.contains { $0.signal == .motion }
+        return loud && busy ? "Big reaction during action" : loud ? "Big reaction" : busy ? "Lots of action" : "Moment"
     }
 }
 public struct AutoClipReport: Codable, Equatable, Sendable {
@@ -204,13 +210,17 @@ public enum AutoClipRules {
         return low < events.count && events[low].time <= time + 2
     }
     public static func project(for candidate: AutoClipCandidate, media: MediaItem, outputAudioTrack: Int = 0) throws -> EditProject {
+        try project(for: candidate, media: media, outputAudioTracks: [outputAudioTrack])
+    }
+    public static func project(for candidate: AutoClipCandidate, media: MediaItem, outputAudioTracks: [Int]) throws -> EditProject {
         guard candidate.start.isFinite, candidate.end.isFinite, candidate.start >= 0, candidate.end <= media.duration, candidate.end > candidate.start else { throw EditError.invalid("Invalid automatic clip range.") }
-        guard (0..<64).contains(outputAudioTrack), outputAudioTrack < max(1, media.audioTrackCount ?? 64) else { throw EditError.invalid("Choose an available export audio track.") }
-        var project = EditProject(workflow: .mobileShort); project.name = candidate.title; project.media = [media]
+        let available = max(1, media.audioTrackCount ?? 64)
+        guard !outputAudioTracks.isEmpty, outputAudioTracks.allSatisfy({ (0..<64).contains($0) && $0 < available }) else { throw EditError.invalid("Choose an available export audio track.") }
+        var project = EditProject(workflow: .mobileShort); project.name = candidate.title; project.media = [media]; project.media[0].audioRoles = nil
         project.clips = [TimelineClip(mediaID: media.id, sourceIn: candidate.start, sourceOut: candidate.end)]
         var adjustments = ClipAdjustments()
-        // OBS audience mix and isolated tracks often contain the same sound. Export exactly one.
-        adjustments.audioGains = Dictionary(uniqueKeysWithValues: (0..<max(1, media.audioTrackCount ?? 64)).map { (String($0), $0 == outputAudioTrack ? 1.0 : 0.0) })
+        // OBS audience mix and isolated tracks often contain the same sound. Export only the chosen tracks.
+        adjustments.audioGains = Dictionary(uniqueKeysWithValues: (0..<available).map { (String($0), outputAudioTracks.contains($0) ? 1.0 : 0.0) })
         project.clips[0].adjustments = adjustments
         try project.validate(); return project
     }

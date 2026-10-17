@@ -61,25 +61,38 @@ private final class SparkleBackend: NSObject, UpdateBackend {
 
 struct UpdatesSettingsView: View {
     @ObservedObject var updates: UpdateService
+    @AppStorage(AppearanceMode.key) private var appearance = AppearanceMode.system.rawValue
+    @AppStorage("editor-advanced") private var advanced = false
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("\(AppEnvironment.current.name) \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "")").font(.title2)
-            if updates.enabled {
-                Toggle("Automatically check for updates", isOn: Binding(get: { updates.state.automaticChecks }, set: updates.setAutomaticChecks)).accessibilityIdentifier("updates.automatic")
-                Text("Updates come from Cutline’s GitHub releases. You choose when to download and install them.")
-                if Bundle.main.object(forInfoDictionaryKey: "CutlineReleaseChannel") as? String == "preview" {
-                    Text("Developer preview: this build is not notarized by Apple.").foregroundStyle(.orange)
+        Form {
+            Section("Appearance") {
+                Picker("Theme", selection: $appearance) {
+                    ForEach(AppearanceMode.allCases) { Label($0.label, systemImage: $0.icon).tag($0.rawValue) }
+                }.pickerStyle(.segmented).accessibilityIdentifier("settings.appearance")
+                    .onChange(of: appearance) { _, value in AppearanceMode.apply(AppearanceMode(rawValue: value) ?? .system) }
+                Toggle("Show advanced editing tools", isOn: $advanced)
+            }
+            Section("Your channel") { CreatorProfileView() }
+            Section("Updates") {
+                Text("\(AppEnvironment.current.name) \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "")").foregroundStyle(Studio.muted)
+                if updates.enabled {
+                    Toggle("Automatically check for updates", isOn: Binding(get: { updates.state.automaticChecks }, set: updates.setAutomaticChecks)).accessibilityIdentifier("updates.automatic")
+                    Text("Updates come from Cutline’s GitHub releases. You choose when to download and install them.").font(.system(size: 11)).foregroundStyle(Studio.muted)
+                    if Bundle.main.object(forInfoDictionaryKey: "CutlineReleaseChannel") as? String == "preview" {
+                        Text("Developer preview: this build is not notarized by Apple.").foregroundStyle(Studio.warning)
+                    }
+                    HStack {
+                        Button("Check for Updates…", action: updates.check).disabled(!updates.state.canCheck).accessibilityIdentifier("updates.check")
+                        Spacer()
+                        Text(updates.state.lastCheck.map { "Last checked \($0.formatted(date: .abbreviated, time: .shortened))" } ?? "Not checked yet").font(.system(size: 11)).foregroundStyle(Studio.muted)
+                    }
+                } else {
+                    Text("This is a local development build. Rebuild it from the dev branch to update. It never checks for or installs release updates.").font(.system(size: 11)).foregroundStyle(Studio.muted).accessibilityIdentifier("updates.development")
                 }
-                Button("Check for Updates…", action: updates.check).disabled(!updates.state.canCheck).accessibilityIdentifier("updates.check")
-                Text(updates.state.lastCheck.map { "Last checked: \($0.formatted())" } ?? "No update checks yet.").font(.caption)
-            } else {
-                Text("This is a local development build. Rebuild it from the dev branch to update. It never checks for or installs release updates.").accessibilityIdentifier("updates.development")
+                if let address = Bundle.main.object(forInfoDictionaryKey: "CutlineReleasesURL") as? String, let url = URL(string: address) {
+                    Link("GitHub releases and downloads", destination: url)
+                }
             }
-            if let address = Bundle.main.object(forInfoDictionaryKey: "CutlineReleasesURL") as? String, let url = URL(string: address) {
-                Link("GitHub releases and downloads", destination: url)
-            }
-            Divider()
-            CreatorProfileView()
-        }.padding(24).frame(width: 450).onAppear { updates.start() }
+        }.formStyle(.grouped).frame(width: 500).onAppear { updates.start() }
     }
 }

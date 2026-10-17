@@ -9,7 +9,7 @@ extension EditorUITests {
         XCTAssertTrue(field.waitForExistence(timeout: 5)); XCTAssertEqual(field.value as? String, "")
         edit(field, "example.test/creator")
         app.buttons["creator.save"].click()
-        assertLabel("creator.status", "Branding saved on this Mac.")
+        assertLabel("creator.status", "Saved on this Mac.")
         XCTAssertEqual(try CreatorProfileStore.load(from: root).text, "example.test/creator")
         XCTAssertEqual(try EditProject.read(from: projectURL), project)
         app.terminate(); launch(); app.typeKey(",", modifierFlags: .command)

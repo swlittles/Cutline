@@ -213,6 +213,7 @@ public extension EditProject {
             }
         }
         if let captions = captionTrack { try captions.validate(clipIDs: Set(clips.map(\.id))) }
+        if let review = clipReview { try review.validate(duration: media.first { $0.id == review.mediaID }?.duration) }
         for transcript in transcripts ?? [] {
             guard media.contains(where: { $0.id == transcript.mediaID }), transcript.audioTrack >= 0 else { throw EditError.invalid("Invalid transcript source.") }
             guard Set(transcript.segments.map(\.id)).count == transcript.segments.count else { throw EditError.invalid("The transcript contains duplicate segment identifiers.") }

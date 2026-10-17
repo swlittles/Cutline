@@ -38,7 +38,7 @@ struct AIPanel: View {
                 Text("Sends your instruction and transcript text to OpenRouter and its model provider. No video or audio is uploaded. Uses your OpenRouter credits · \(sections) request\(sections == 1 ? "" : "s").").font(.system(size: 10)).foregroundStyle(Studio.muted).lineSpacing(3)
                 Button(action: store.requestAI) {
                     Label(store.isThinking ? "Working…" : "Generate suggestions", systemImage: "sparkles").frame(maxWidth: .infinity).padding(.vertical, 5)
-                }.buttonStyle(.borderedProminent).disabled(!keySaved || sections == 0 || store.isThinking)
+                }.buttonStyle(.primary).disabled(!keySaved || sections == 0 || store.isThinking)
                 if store.isThinking {
                     ProgressView(); Text(store.aiProgress).font(.system(size: 10)).foregroundStyle(Studio.muted)
                     Button("Cancel") { store.assistantTask?.cancel() }
@@ -49,7 +49,7 @@ struct AIPanel: View {
                     ForEach(proposal.highlights) { highlight in
                         VStack(alignment: .leading, spacing: 8) {
                             Text(highlight.title).font(.system(size: 12, weight: .semibold))
-                            Text("\(timecode(highlight.start)) – \(timecode(highlight.end))").font(.system(size: 10, design: .monospaced)).foregroundStyle(Studio.mint)
+                            Text("\(timecode(highlight.start)) – \(timecode(highlight.end))").font(.system(size: 10, design: .monospaced)).foregroundStyle(Studio.accent)
                             Text(highlight.reason).font(.system(size: 10)).foregroundStyle(Studio.muted)
                             VStack(alignment: .leading, spacing: 6) {
                                 Button("Preview") { store.seek(highlight.start); store.togglePlayback() }
@@ -63,7 +63,7 @@ struct AIPanel: View {
                         ForEach(proposal.captionEdits) { edit in
                             VStack(alignment: .leading, spacing: 5) {
                                 Text(store.project.captionTrack?.cues.first { $0.id.uuidString == edit.id }?.text ?? "").foregroundStyle(Studio.muted)
-                                Text(edit.text).foregroundStyle(Studio.mint)
+                                Text(edit.text).foregroundStyle(Studio.accent)
                             }.font(.system(size: 11)).padding(9).background(Studio.raised, in: RoundedRectangle(cornerRadius: 5))
                         }
                         Button("Apply caption edits", action: store.applyCaptionEdits)
@@ -79,6 +79,6 @@ struct AIPanel: View {
         }.accessibilityIdentifier("ai.scroll").onAppear { keySaved = OpenRouterKeychain.read() != nil; configure = !keySaved }
     }
     private func quick(_ title: String, _ prompt: String) -> some View {
-        Button(title) { store.aiPrompt = prompt }.font(.system(size: 10)).buttonStyle(.bordered)
+        Button(title) { store.aiPrompt = prompt }.font(.system(size: 10)).buttonStyle(.secondary)
     }
 }

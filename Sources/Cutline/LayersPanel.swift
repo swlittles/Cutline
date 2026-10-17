@@ -35,7 +35,7 @@ struct LayersPanel: View {
                     if let clip = store.project.clips.first(where: { $0.id == marker.clipID }), marker.sourceTime >= clip.sourceIn, marker.sourceTime < clip.sourceOut {
                         let time = store.project.start(of: clip.id) + (marker.sourceTime - clip.sourceIn) / clip.speed
                         HStack {
-                            Button { store.seek(time) } label: { Label(marker.label + " · " + timecode(time), systemImage: "bookmark.fill").lineLimit(1) }.buttonStyle(.plain).foregroundStyle(Studio.mint)
+                            Button { store.seek(time) } label: { Label(marker.label + " · " + timecode(time), systemImage: "bookmark.fill").lineLimit(1) }.buttonStyle(.plain).foregroundStyle(Studio.accent)
                             Spacer()
                             Button { store.commit { $0.markers?.removeAll { $0.id == marker.id } } } label: { Image(systemName: "xmark") }.buttonStyle(.plain)
                         }.font(.system(size: 11)).padding(9).background(Studio.raised, in: RoundedRectangle(cornerRadius: 5))

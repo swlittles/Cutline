@@ -13,33 +13,28 @@ struct ShortFramingSheet: View {
     var media: MediaItem? { store.project.media.first { $0.id == mediaID } ?? store.selectedMedia ?? store.clipMedia }
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Short framing · 30 / 2 / 68").font(.headline)
+            Text("Facecam & gameplay layout").font(Studio.title(22))
             Picker("Recording", selection: Binding(get: { media?.id }, set: { mediaID = $0 })) {
                 ForEach(store.project.media) { Text($0.name).tag(Optional($0.id)) }
             }.accessibilityIdentifier("short.source")
-            if let image {
-                let width = min(640.0, 320 * image.size.width / image.size.height)
-                let height = width * image.size.height / image.size.width
-                ZStack(alignment: .topLeading) {
-                    Image(nsImage: image).resizable().frame(width: width, height: height)
-                    region(framing.gameplay, color: .green, title: "Gameplay", width: width, height: height)
-                    region(framing.camera, color: .orange, title: "Facecam", width: width, height: height)
-                }.clipped().frame(width: width, height: height).frame(width: 640, height: 320)
-            } else { Text(error ?? "Loading source frame…").frame(width: 640, height: 320) }
+            RegionEditor(image: image, boxes: [
+                RegionBox(id: "Gameplay", color: Studio.series, region: Binding(get: { framing.gameplay }, set: { framing.gameplay = $0; framing.confirmed = false })),
+                RegionBox(id: "Facecam", color: Studio.accent, region: Binding(get: { framing.camera }, set: { framing.camera = $0; framing.confirmed = false }))
+            ]).frame(width: 640, height: 320)
             Slider(value: $time, in: 0...max(0.01, (media?.duration ?? 1) - 0.1)).accessibilityIdentifier("short.frameTime")
-            Text("Source \(timecode(time)) · crop coordinates in percent from the top-left").font(.caption)
+            Text("Source \(timecode(time)) · drag the boxes, or type percentages from the top-left").font(.caption)
             fields("Facecam", region: $framing.camera)
             fields("Gameplay", region: $framing.gameplay)
             Toggle("Fit full gameplay region (for chess / HUD-heavy games)", isOn: $framing.containGameplay).accessibilityIdentifier("short.containGameplay")
-            Text("Facecam fills the top panel. Gameplay fills the lower panel unless Fit is enabled. Check each recording and any scene changes; exclude its embedded facecam from the gameplay crop.").font(.caption).foregroundStyle(.secondary)
+            Text("Facecam fills the top panel. Gameplay fills the lower panel unless Fit is enabled. Check each recording and any scene changes; exclude its embedded facecam from the gameplay crop.").font(.system(size: 11)).foregroundStyle(Studio.muted)
             Toggle("I checked these crops on this recording", isOn: $framing.confirmed).accessibilityIdentifier("short.confirmed")
-            if let error { Text(error).foregroundStyle(.red) }
+            if let error { Text(error).foregroundStyle(Studio.danger) }
             HStack {
-                Button("Cancel") { dismiss() }.keyboardShortcut(.cancelAction)
+                Button("Cancel") { dismiss() }.buttonStyle(.secondary).keyboardShortcut(.cancelAction)
                 Spacer()
-                Button("Apply framing") { apply(); if error == nil { dismiss() } }.accessibilityIdentifier("short.applyFraming").keyboardShortcut(.defaultAction)
+                Button("Apply layout") { apply(); if error == nil { dismiss() } }.buttonStyle(.primary).accessibilityIdentifier("short.applyFraming").keyboardShortcut(.defaultAction)
             }
-        }.padding(20).frame(width: 680)
+        }.padding(24).frame(width: 688).background(Studio.base)
         .onAppear { load() }.onChange(of: media?.id) { _, _ in load() }
         .task(id: "\(media?.id.uuidString ?? "")-\(time)") {
             guard let media else { return }
@@ -60,11 +55,6 @@ struct ShortFramingSheet: View {
             store.commit { project in if let index = project.media.firstIndex(where: { $0.id == id }) { project.media[index].shortFraming = framing } }
             error = nil
         } catch { self.error = error.localizedDescription }
-    }
-    private func region(_ r: ClipScanRegion, color: Color, title: String, width: Double, height: Double) -> some View {
-        Rectangle().stroke(color, lineWidth: 2).overlay(alignment: .topLeading) { Text(title).font(.caption).padding(2).background(color) }
-            .frame(width: max(0, min(1, r.width)) * width, height: max(0, min(1, r.height)) * height)
-            .offset(x: max(0, min(1, r.x)) * width, y: max(0, min(1, r.y)) * height)
     }
     private func fields(_ title: String, region: Binding<ClipScanRegion>) -> some View {
         HStack {

@@ -11,10 +11,11 @@ struct CutlineApp: App {
     @StateObject private var store = EditorStore()
     @StateObject private var updates = UpdateService()
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
+    @AppStorage(AppearanceMode.key) private var appearance = AppearanceMode.system.rawValue
+    @AppStorage("editor-advanced") private var advancedEditor = false
     var body: some Scene {
         WindowGroup(id: "editor") {
-            EditorView().environmentObject(store)
-                .preferredColorScheme(.dark)
+            RootView().environmentObject(store)
                 .handlesExternalEvents(preferring: ["*"], allowing: ["*"])
                 .onOpenURL { url in
                     guard !store.isImporting, !store.isExporting, store.confirmDiscard() else { return }
@@ -25,6 +26,7 @@ struct CutlineApp: App {
                     UITestRuntime.install()
                     #endif
                     delegate.store = store
+                    AppearanceMode.apply(.current)
                     updates.start()
                     NSApp.setActivationPolicy(.regular)
                     NSApp.activate(ignoringOtherApps: true)
@@ -44,31 +46,43 @@ struct CutlineApp: App {
                 Button("New Project", action: store.newProject).keyboardShortcut("n").disabled(store.isImporting)
                 Button("Open Project…", action: store.openProject).keyboardShortcut("o").disabled(store.isImporting)
                 Button("Recover Autosave", action: store.recoverAutosave)
-                Button("Import Media…", action: store.importMedia).keyboardShortcut("i").disabled(store.isImporting)
+                Button("Import Media…", action: { store.mode == .clipper ? store.chooseVODFromPanel() : store.importMedia() }).keyboardShortcut("i").disabled(store.isImporting)
+                Divider()
+                Button("Clip a Stream…", action: store.startClipping).keyboardShortcut("n", modifiers: [.command, .shift]).disabled(store.isImporting)
+                Button("Home", action: store.showHome).keyboardShortcut("h", modifiers: [.command, .shift])
+            }
+            CommandGroup(after: .toolbar) {
+                Picker("Appearance", selection: Binding(get: { appearance }, set: { appearance = $0; AppearanceMode.apply(AppearanceMode(rawValue: $0) ?? .system) })) {
+                    ForEach(AppearanceMode.allCases) { Text($0.label).tag($0.rawValue) }
+                }
+                Toggle("Show Advanced Editing Tools", isOn: $advancedEditor)
             }
             CommandGroup(replacing: .saveItem) {
                 Button("Save Project", action: { store.save() }).keyboardShortcut("s")
                 Button("Save Project As…", action: { store.save(as: true) }).keyboardShortcut("s", modifiers: [.command, .shift])
-                Button("Export MP4…", action: store.exportVideo).keyboardShortcut("e").disabled(!store.canExport)
+                Button("Export MP4…", action: store.exportVideo).keyboardShortcut("e").disabled(!store.canExport || store.mode != .editor)
             }
             CommandGroup(replacing: .undoRedo) {
                 Button("Undo", action: store.undo).keyboardShortcut("z").disabled(store.undoStack.isEmpty)
                 Button("Redo", action: store.redo).keyboardShortcut("z", modifiers: [.command, .shift]).disabled(store.redoStack.isEmpty)
             }
             CommandMenu("Timeline") {
-                Button("Play / Pause", action: store.togglePlayback).keyboardShortcut(.space, modifiers: [])
-                Button("Mark Highlight", action: store.addMarker).keyboardShortcut("m", modifiers: [.command, .shift])
-                Button("Split at Playhead", action: store.split).keyboardShortcut("b").disabled(store.project.clips.isEmpty)
-                Button("Duplicate Clip", action: store.duplicate).keyboardShortcut("d").disabled(store.selectedClip == nil)
-                Button("Delete Clip", action: store.deleteSelected).disabled(store.selectedClip == nil)
-                Divider()
-                Button("Back 5 Seconds", action: { store.seek(store.playhead - 5) }).keyboardShortcut(.leftArrow, modifiers: [])
-                Button("Forward 5 Seconds", action: { store.seek(store.playhead + 5) }).keyboardShortcut(.rightArrow, modifiers: [])
-                Button("Previous Frame", action: { store.seek(store.playhead - 1.0 / Double(store.project.options.fps)) }).keyboardShortcut(.leftArrow, modifiers: .option)
-                Button("Next Frame", action: { store.seek(store.playhead + 1.0 / Double(store.project.options.fps)) }).keyboardShortcut(.rightArrow, modifiers: .option)
+                // Timeline keys belong to the editor. The clipper's review screen handles its own keys.
+                Group {
+                    Button("Play / Pause", action: store.togglePlayback).keyboardShortcut(.space, modifiers: [])
+                    Button("Mark Highlight", action: store.addMarker).keyboardShortcut("m", modifiers: [.command, .shift])
+                    Button("Split at Playhead", action: store.split).keyboardShortcut("b").disabled(store.project.clips.isEmpty)
+                    Button("Duplicate Clip", action: store.duplicate).keyboardShortcut("d").disabled(store.selectedClip == nil)
+                    Button("Delete Clip", action: store.deleteSelected).disabled(store.selectedClip == nil)
+                    Divider()
+                    Button("Back 5 Seconds", action: { store.seek(store.playhead - 5) }).keyboardShortcut(.leftArrow, modifiers: [])
+                    Button("Forward 5 Seconds", action: { store.seek(store.playhead + 5) }).keyboardShortcut(.rightArrow, modifiers: [])
+                    Button("Previous Frame", action: { store.seek(store.playhead - 1.0 / Double(store.project.options.fps)) }).keyboardShortcut(.leftArrow, modifiers: .option)
+                    Button("Next Frame", action: { store.seek(store.playhead + 1.0 / Double(store.project.options.fps)) }).keyboardShortcut(.rightArrow, modifiers: .option)
+                }.disabled(store.mode != .editor)
             }
         }
-        Settings { UpdatesSettingsView(updates: updates).environmentObject(store) }
+        Settings { UpdatesSettingsView(updates: updates).environmentObject(store).tint(Studio.accent) }
     }
 }
 
@@ -87,6 +101,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         guard let store else { return true }
         if store.isTranscribing { store.transcriptionTask?.cancel() }
         store.clipTask?.cancel()
+        store.clipCaptionTask?.cancel()
         store.assistantTask?.cancel()
         store.generationTask?.cancel()
         if store.isExporting || store.isExportingClips || store.isImporting {

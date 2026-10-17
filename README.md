@@ -21,29 +21,48 @@ open "dist/Cutline Dev.app"
 
 The build selects `/Applications/Xcode.app` when available and targets the build machine's architecture. It produces an ad-hoc signed development app, not a notarized universal release. Open `Cutline.xcodeproj` in Xcode for the app and all test targets. `project.yml` generates this project; the Swift package remains available for command-line builds. Keep `DEVELOPER_DIR` consistent between Swift commands to avoid mixing compiler caches.
 
-## Edit a stream
+## Clip a stream (guided)
 
-**Output workflow:** mobile shorts (including YouTube Shorts) require 9:16 facecam/gameplay framing; only YouTube long-form uses 16:9. See the [output workflow contract](docs/OUTPUT_WORKFLOWS.md), including the mandatory 30% facecam / 2% Kick strip / 68% gameplay layout and editable hooks.
+Cutline opens on **Home**. **Clip a stream** (⇧⌘N) has four steps:
 
-1. **⌘I** imports videos or still images. Add a library item with **+** or double-click. MP4/MOV with H.264/HEVC are the main video inputs; AVFoundation determines codec support. Remux unsupported OBS MKV recordings first. Stills become five-second clips, with their artwork preserved on disk.
+1. **Video:** drop or choose one recording. MP4, MOV and OBS's default MKV all work. MKV/FLV/TS files are copied into an MP4 beside the original, with no re-encoding and every audio track kept. If an MP4 with the same name already exists (for example from OBS's own remux), Cutline uses it. Without `ffmpeg`, Cutline explains how to remux in OBS instead. Finding moments starts immediately in the background. If you saved a layout, **Use my saved layout** skips step 2.
+2. **Layout:** drag the facecam and gameplay boxes on a real frame and watch the live 9:16 preview. Enter your channel name the first time. Sound and game have sensible defaults and stay folded. **Change** under Sound shows each OBS track with a loudness graph, an eight-second listen and a plain-language role (Everything / My voice / Game / Not used). **Remember this layout** is on by default.
+3. **Pick clips:** moments fill in as they are found. Each one plays as the finished short. **Keep** always works: if the hook is empty, Cutline uses the suggested hook (shown as the placeholder) in the same undo step. **Skip** passes. **Start/End −1s/+1s** buttons and drag handles trim. **Fewer ↔ More** changes how many moments appear instantly. **Add a moment** opens a scrubber for plays you remember. Detection settings (signals, thresholds, motion/HUD areas, OCR) live behind the sliders button. Keyboard shortcuts are listed under **Keyboard shortcuts**.
+4. **Export:** one button. Shorts go to `~/Movies/Cutline/<recording> shorts/` (change the folder once and it is remembered). MP4s sit at the top of that folder. Editable `.cutline` projects and `analysis.json` go in **Editable projects**. With **Add captions** on, Cutline writes captions for the kept clips before exporting, so there is nothing extra to click.
+
+**Edit this clip…** opens one moment in the editor without closing the session. **Back to my clips** returns with every decision, hook and trim. Clipping sessions autosave to `Recovery/clip-session.cutline`, so Home offers **Continue clipping** after a relaunch.
+
+Measurements are cached in Application Support (`Analysis/`), keyed by file path, size, modification date and duration, so reopening a recording is instant. Layouts are stored in `scene-presets.json` with owner-only permissions. Saving the session (⌘S) keeps the recording reference, roles, framing, hooks, decisions and trims.
+
+## Edit a video
+
+**Output workflow:** mobile shorts (including YouTube Shorts) require 9:16 facecam/gameplay framing; only YouTube long-form uses 16:9. See the [output workflow contract](docs/OUTPUT_WORKFLOWS.md), including the mandatory 30% facecam / 2% branding strip / 68% gameplay layout and editable hooks.
+
+Choose **Edit a video** on Home. The editor opens in **Simple** mode: Media and Captions, trimming with **Start here / End here**, volume, the hook, the layout and Export. **Advanced** (header toggle, View menu or Settings) adds Layers, AI, numeric trims, transform/speed/color, per-track gains and transcript gap cutting. If Export can't run yet, its tooltip and the alert say why in plain words.
+
+1. **⌘I** or **Import videos** adds videos or still images. Click **Add** (or double-click) to put one on the timeline. Stills become five-second clips.
 2. Seek with the timeline ruler. **Space** plays/pauses, **← / →** jumps five seconds, and **Option + ← / →** steps one frame at the selected project frame rate.
-3. **⌘B** splits, **⌘D** duplicates, and **Delete** removes a selected clip. Drag clips to reorder. Drag a selected clip's edge or edit source times in the inspector to trim. Undo/redo is **⌘Z / ⇧⌘Z**.
-4. The inspector offers fit/fill, zoom, position, rotation, mirror, transform keyframes, speed, simple color adjustments and fades. Choose **Mobile Short (9:16)** or **YouTube Video (16:9)**, 720p/1080p/4K, and 24/25/30/50/60 fps. Shorts default to 30 fps. Set a hook and check each recording’s crops in **Short framing** before exporting.
-5. Expand **Audio tracks** on a selected clip to control each embedded OBS track. If the source contains a combined mix alongside separate microphone/game tracks, mute the redundant tracks to avoid doubled audio.
-6. **Layers** adds timed video overlays, music, and local text-to-speech voiceovers. Overlay/audio layers use absolute timeline positions; ordinary clip trim/reorder does not automatically relink them. Transcript cuts and AI keep-range edits do rebase all layers together.
+3. **⌘B** splits, **⌘D** duplicates, and **Delete** removes a selected clip. Drag clips to reorder. Drag a selected clip's edge, or use **Start here / End here**, to trim. Undo/redo is **⌘Z / ⇧⌘Z**.
+4. Choose **Short · 9:16** or **YouTube · 16:9** under Format. Shorts default to 30 fps. Set a hook and check each recording's **Facecam & gameplay layout** before exporting.
+5. In Advanced, **Source audio tracks** on a selected clip controls each embedded OBS track. If the source contains a combined mix alongside separate microphone/game tracks, mute the redundant tracks to avoid doubled audio.
+6. In Advanced, **Layers** adds timed video overlays, music, and local text-to-speech voiceovers. Overlay/audio layers use absolute timeline positions; ordinary clip trim/reorder does not automatically relink them. Transcript cuts and AI keep-range edits do rebase all layers together.
 7. **⌘S** saves an editable `.cutline` project. **⌘E** exports an MP4 snapshot, with progress/cancellation. Export uses a temporary sibling file and rejects source-media destinations.
+
+## Appearance
+
+Cutline uses a warm ivory/slate palette with a terracotta accent, in **Light**, **Dark** or **System** appearance. Switch with the sun/moon button in any header, **View → Appearance**, or Settings.
 
 ## Local transcription and automatic captions
 
-Install the local engines once, if missing:
+Captions work out of the box with macOS on-device speech recognition (audio never leaves the Mac; macOS asks for Speech Recognition permission the first time). For multilingual Whisper models and custom vocabulary, install the optional local engines once:
 
 ```sh
 ./scripts/setup-local-ai.sh
 ```
 
-This script uses Homebrew to install `whisper-cpp` and `ffmpeg`. Homebrew must already be installed. The app finds the helpers under `/opt/homebrew/bin`, `/usr/local/bin`, or its bundle's `Contents/Helpers` directory; this development build does not bundle their binaries/dependencies.
+This script uses Homebrew to install `whisper-cpp` and `ffmpeg`. Homebrew must already be installed. The app finds the helpers under `/opt/homebrew/bin`, `/usr/local/bin`, or its bundle's `Contents/Helpers` directory. To bundle them, set `CUTLINE_HELPERS_DIR` to a folder of self-contained (statically linked) `ffmpeg`/`whisper-cli` builds when running `scripts/build-app.sh`; Homebrew-linked binaries are rejected. When Whisper is installed with a downloaded model, Cutline uses it; otherwise it uses macOS speech recognition.
 
-In **Captions**, select the recording and its speech/microphone track. Download a model under **Speech model & language**, choose the language, optionally supply game/player vocabulary, then click **Generate captions**. Models are SHA-256 verified and saved under `~/Library/Application Support/Cutline/Models` for release builds, or `Cutline Dev/Models` for local builds. Recognition runs locally after the initial download. No OpenRouter account is needed.
+In **Captions**, select the recording and its speech/microphone track. Download a model under **Speech model & language**, choose the language, optionally supply game/player vocabulary, then click **Make captions**. Models are SHA-256 verified and saved under `~/Library/Application Support/Cutline/Models` for release builds, or `Cutline Dev/Models` for local builds. Recognition runs locally after the initial download. No OpenRouter account is needed.
 
 The multilingual Base model is about 148 MB; English Base and English Small are also available. Five-minute sections bound the transcription working set. Audio quality, model size, game noise and specialist names affect accuracy: review text and timings before export.
 
@@ -98,4 +117,4 @@ No telemetry is implemented. Network access is used for model downloads, request
 
 ## Automatic clips without API costs
 
-The **Clips** workspace finds activity from local audio levels, sampled frame changes, optional game HUD OCR, and source markers. Review, append, or batch-export separate videos and editable projects. No OpenRouter key or transcript is required. See [automatic clipping](docs/AUTOMATIC_CLIPS.md) for game profiles, calibration, thresholds and limitations.
+**Clip a stream** finds activity from local audio levels, sampled frame changes, optional game HUD OCR, and moments you mark. Review them one by one and batch-export separate videos and editable projects. No OpenRouter key or transcript is required. See [automatic clipping](docs/AUTOMATIC_CLIPS.md) for game profiles, calibration, thresholds and limitations.

@@ -7,6 +7,7 @@ info = dict(CFBundleName=name, CFBundleDisplayName=name, CFBundleIdentifier=iden
             CFBundleExecutable='Cutline', CFBundlePackageType='APPL', CFBundleShortVersionString=version,
             CFBundleVersion=build, LSMinimumSystemVersion='14.0', NSHighResolutionCapable=True,
             NSPrincipalClass='NSApplication', CutlineReleaseChannel=channel,
+            NSSpeechRecognitionUsageDescription='Cutline turns the speech in your clips into captions, on this Mac.',
             UTExportedTypeDeclarations=[dict(UTTypeIdentifier='studio.cutline.project', UTTypeDescription='Cutline Project',
                 UTTypeConformsTo=['public.json'], UTTypeTagSpecification={'public.filename-extension':['cutline']})],
             CFBundleDocumentTypes=[dict(CFBundleTypeName='Cutline Project', CFBundleTypeRole='Editor',

@@ -4,6 +4,7 @@ import CutlineCore
 
 struct CaptionPanel: View {
     @EnvironmentObject var store: EditorStore
+    @AppStorage("editor-advanced") private var advanced = false
     @State private var search = ""
     @State private var trackCount = 1
     @State private var showSetup = false
@@ -11,44 +12,55 @@ struct CaptionPanel: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 HStack {
-                    Label("Auto captions", systemImage: "captions.bubble").font(.system(size: 14, weight: .semibold))
+                    Label("Captions", systemImage: "captions.bubble").font(.system(size: 14, weight: .semibold))
                     Spacer()
-                    Text("ON DEVICE").font(.system(size: 8, weight: .bold)).foregroundStyle(Studio.mint)
+                    Text("ON THIS MAC").font(.system(size: 8, weight: .bold)).tracking(0.8).foregroundStyle(Studio.accent)
                 }
-                Text("Turn your commentary into editable captions. Your audio stays on this Mac.").font(.system(size: 11)).foregroundStyle(Studio.muted)
-                Picker("Recording", selection: Binding(get: { store.transcriptionMedia?.id }, set: { store.transcriptionMediaID = $0 })) {
-                    ForEach(store.project.media) { Text($0.name).tag(Optional($0.id)) }
-                }.font(.system(size: 11))
-                Picker("Speech track", selection: $store.transcriptionAudioTrack) {
-                    ForEach(0..<max(1, trackCount), id: \.self) { Text("Audio \($0 + 1)").tag($0) }
-                }.font(.system(size: 11)).accessibilityIdentifier("captions.audio-track")
-                Text("Choose your microphone track for OBS recordings with separate audio.").font(.system(size: 10)).foregroundStyle(Studio.muted)
-                DisclosureGroup("Speech model & language", isExpanded: $showSetup) {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Picker("Model", selection: $store.speechModel) { ForEach(WhisperModel.allCases) { Text($0.label).tag($0) } }.labelsHidden()
-                        if store.speechModel.installed { Label("Model ready for offline use", systemImage: "checkmark.circle").font(.system(size: 10)).foregroundStyle(Studio.mint) }
-                        else {
-                            Button(store.isDownloadingModel ? "Downloading & verifying…" : "Download model", action: store.downloadSpeechModel).disabled(store.isDownloadingModel)
-                        }
-                        if store.isDownloadingModel { ProgressView(); Button("Cancel download") { store.downloadTask?.cancel() } }
-                        Picker("Language", selection: $store.transcriptionLanguage) {
-                            Text("Detect automatically").tag("auto"); Text("English").tag("en"); Text("Spanish").tag("es"); Text("French").tag("fr"); Text("German").tag("de"); Text("Portuguese").tag("pt"); Text("Japanese").tag("ja"); Text("Korean").tag("ko"); Text("Chinese").tag("zh")
-                        }.disabled(store.speechModel != .base)
-                        TextField("Game names, players, specialist words", text: $store.transcriptionVocabulary, axis: .vertical).textFieldStyle(.roundedBorder).lineLimit(2...4)
-                        if LocalTools.executable("whisper-cli") == nil || LocalTools.executable("ffmpeg") == nil { Text("Install local engines with scripts/setup-local-ai.sh.").foregroundStyle(.orange) }
-                    }.font(.system(size: 10)).padding(.top, 8)
-                }.font(.system(size: 11))
-                if !store.speechModel.installed && !showSetup { Button("Download speech model", action: store.downloadSpeechModel).disabled(store.isDownloadingModel) }
+                Text("Turn what you say into captions you can edit. Your audio never leaves this Mac.").font(.system(size: 11)).foregroundStyle(Studio.muted)
+                if store.project.media.count > 1 {
+                    Picker("Video", selection: Binding(get: { store.transcriptionMedia?.id }, set: { store.transcriptionMediaID = $0 })) {
+                        ForEach(store.project.media) { Text($0.name).tag(Optional($0.id)) }
+                    }.font(.system(size: 11))
+                }
+                if trackCount > 1 {
+                    Picker("Your voice is on", selection: $store.transcriptionAudioTrack) {
+                        ForEach(0..<max(1, trackCount), id: \.self) { Text("Track \($0 + 1)").tag($0) }
+                    }.font(.system(size: 11)).accessibilityIdentifier("captions.audio-track")
+                    Text("OBS recordings can have separate tracks. Pick the one with your microphone.").font(.system(size: 10)).foregroundStyle(Studio.muted)
+                }
+                if store.captionEngine == .whisper || store.captionEngine == .whisperNeedsModel || advanced {
+                    DisclosureGroup("Speech model & language", isExpanded: $showSetup) {
+                        VStack(alignment: .leading, spacing: 10) {
+                            Picker("Model", selection: $store.speechModel) { ForEach(WhisperModel.allCases) { Text($0.label).tag($0) } }.labelsHidden()
+                            if store.speechModel.installed { Label("Model ready for offline use", systemImage: "checkmark.circle").font(.system(size: 10)).foregroundStyle(Studio.success) }
+                            else {
+                                Button(store.isDownloadingModel ? "Downloading & verifying…" : "Download model", action: store.downloadSpeechModel).buttonStyle(.secondary).disabled(store.isDownloadingModel)
+                            }
+                            if store.isDownloadingModel { ProgressView(); Button("Cancel download") { store.downloadTask?.cancel() }.buttonStyle(.quiet) }
+                            Picker("Language", selection: $store.transcriptionLanguage) {
+                                Text("Detect automatically").tag("auto"); Text("English").tag("en"); Text("Spanish").tag("es"); Text("French").tag("fr"); Text("German").tag("de"); Text("Portuguese").tag("pt"); Text("Japanese").tag("ja"); Text("Korean").tag("ko")
+                            }.disabled(store.speechModel != .base)
+                            TextField("Game names, players, specialist words", text: $store.transcriptionVocabulary, axis: .vertical).textFieldStyle(.roundedBorder).lineLimit(2...4)
+                            if store.captionEngine == .apple { Text("Without a downloaded model, Cutline uses macOS speech recognition.").foregroundStyle(Studio.muted) }
+                        }.font(.system(size: 10)).padding(.top, 8)
+                    }.font(.system(size: 11))
+                }
+                if store.captionEngine == .unavailable {
+                    Text("Captions need macOS speech recognition. Turn on Dictation in System Settings → Keyboard, then come back.").font(.system(size: 11)).foregroundStyle(Studio.warning)
+                }
+                if store.captionEngine == .whisperNeedsModel && !showSetup {
+                    Button("Download speech model (148 MB)", action: store.downloadSpeechModel).buttonStyle(.secondary).disabled(store.isDownloadingModel)
+                }
                 Button(action: store.transcribe) {
-                    Label(store.isTranscribing ? "Transcribing…" : "Generate captions", systemImage: "waveform.badge.mic").frame(maxWidth: .infinity).padding(.vertical, 5)
-                }.accessibilityIdentifier("captions.generate").buttonStyle(.borderedProminent).disabled(store.transcriptionMedia == nil || !store.speechModel.installed || store.isTranscribing || trackCount == 0)
+                    Label(store.isTranscribing ? "Making captions…" : "Make captions", systemImage: "waveform.badge.mic").frame(maxWidth: .infinity)
+                }.accessibilityIdentifier("captions.generate").buttonStyle(.primary).disabled(store.transcriptionMedia == nil || !store.captionEngineReady || store.isTranscribing || trackCount == 0)
                 if store.isTranscribing {
                     ProgressView(value: store.transcriptionProgress)
                     Text(store.transcriptionMessage).font(.system(size: 10)).foregroundStyle(Studio.muted)
-                    Button("Cancel transcription") { store.transcriptionTask?.cancel() }.font(.system(size: 10))
+                    Button("Cancel captions") { store.transcriptionTask?.cancel() }.buttonStyle(.quiet)
                 }
                 Divider()
-                SpeechGapEditor()
+                if advanced { SpeechGapEditor() }
                 CaptionStyleEditor()
                 HStack {
                     Button("Import…", action: store.importSubtitles)
@@ -62,7 +74,7 @@ struct CaptionPanel: View {
                 LazyVStack(spacing: 10) {
                     ForEach(captions) { cue in CaptionEditorRow(cue: cue) }
                 }
-                if captions.isEmpty { Text("Generate captions, import an SRT/VTT file, or add a caption at the playhead.").font(.system(size: 11)).foregroundStyle(Studio.muted).padding(.vertical, 20) }
+                if captions.isEmpty { Text("Make captions above, import an SRT/VTT file, or add one at the playhead with +.").font(.system(size: 11)).foregroundStyle(Studio.muted).padding(.vertical, 20) }
             }.padding(16)
         }
         .accessibilityIdentifier("captions.scroll")
@@ -91,7 +103,7 @@ private struct CaptionStyleEditor: View {
                 Toggle("Background box", isOn: Binding(get: { style.background }, set: { v in change { $0.background = v } }))
                 HStack {
                     ForEach(["FFFFFF", "A0F2BE", "FFE45C", "FF8BB8"], id: \.self) { hex in
-                        Button { change { $0.colorHex = hex } } label: { Circle().fill(color(hex)).frame(width: 20, height: 20).overlay(Circle().stroke(style.colorHex == hex ? Color.white : .clear, lineWidth: 2).padding(-3)) }.buttonStyle(.plain).accessibilityIdentifier("caption.color.\(hex)")
+                        Button { change { $0.colorHex = hex } } label: { Circle().fill(color(hex)).frame(width: 20, height: 20).overlay(Circle().stroke(Studio.line)).overlay(Circle().stroke(style.colorHex == hex ? Studio.accent : .clear, lineWidth: 2).padding(-3)) }.buttonStyle(.plain).accessibilityIdentifier("caption.color.\(hex)")
                     }
                 }
             }.font(.system(size: 11)).padding(.top, 10)
@@ -111,6 +123,7 @@ private struct CaptionStyleEditor: View {
 
 private struct CaptionEditorRow: View {
     @EnvironmentObject var store: EditorStore
+    @AppStorage("editor-advanced") private var advanced = false
     let cue: ProjectedCaption
     @State private var text = ""
     @State private var start = 0.0
@@ -118,19 +131,24 @@ private struct CaptionEditorRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Button { store.seek(cue.start) } label: { Text(timecode(cue.start)).monospacedDigit() }.buttonStyle(.plain).foregroundStyle(Studio.mint)
+                Button { store.seek(cue.start) } label: { Text(timecode(cue.start)).monospacedDigit() }.buttonStyle(.plain).foregroundStyle(Studio.accent)
                 Spacer()
                 Button { store.commit { $0.captionTrack?.cues.removeAll { $0.id == cue.id } } } label: { Image(systemName: "trash") }.buttonStyle(.plain).accessibilityIdentifier("caption.delete.\(cue.id)").foregroundStyle(Studio.muted)
             }.font(.system(size: 10))
             TextField("Caption", text: $text, axis: .vertical).accessibilityIdentifier("caption.text.\(cue.id)").textFieldStyle(.plain).lineLimit(1...5).font(.system(size: 12))
+                .onSubmit { store.editCaption(cue.id, text: text, start: start, end: end) }
             HStack(spacing: 6) {
-                TextField("Start", value: $start, format: .number.precision(.fractionLength(2))).frame(maxWidth: .infinity)
-                Text("→")
-                TextField("End", value: $end, format: .number.precision(.fractionLength(2))).frame(maxWidth: .infinity)
-                Button("Apply") { store.editCaption(cue.id, text: text, start: start, end: end) }.accessibilityIdentifier("caption.apply.\(cue.id)").disabled(text == cue.text && start == cue.start && end == cue.end)
+                if advanced {
+                    TextField("Start", value: $start, format: .number.precision(.fractionLength(2))).frame(maxWidth: .infinity)
+                    Text("→")
+                    TextField("End", value: $end, format: .number.precision(.fractionLength(2))).frame(maxWidth: .infinity)
+                } else { Spacer() }
+                if advanced || text != cue.text {
+                    Button("Apply") { store.editCaption(cue.id, text: text, start: start, end: end) }.buttonStyle(.secondary).controlSize(.small).accessibilityIdentifier("caption.apply.\(cue.id)").disabled(text == cue.text && start == cue.start && end == cue.end)
+                }
             }.textFieldStyle(.roundedBorder).font(.system(size: 9))
-            Button("Cut this range from video") { store.cutRanges([TimelineRange(start: cue.start, end: cue.end)]) }.font(.system(size: 9)).foregroundStyle(Studio.muted)
-        }.padding(11).background(Studio.raised, in: RoundedRectangle(cornerRadius: 7))
+            if advanced { Button("Cut this part from the video") { store.cutRanges([TimelineRange(start: cue.start, end: cue.end)]) }.buttonStyle(.quiet).font(.system(size: 10)) }
+        }.padding(11).background(Studio.raised, in: RoundedRectangle(cornerRadius: 10)).overlay(RoundedRectangle(cornerRadius: 10).stroke(Studio.line))
             .onAppear { sync() }.onChange(of: cue) { _, _ in sync() }
     }
     private func sync() { text = cue.text; start = cue.start; end = cue.end }

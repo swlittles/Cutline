@@ -16,7 +16,7 @@ extension EditorUITests {
     func panelContaining(_ element: XCUIElement) -> String? {
         guard element.exists, app.sheets.count == 0, app.dialogs.count == 0 else { return nil }
         let x = element.frame.midX
-        return ["inspector.scroll", "captions.scroll", "ai.scroll", "layers.scroll", "clips.scroll"].first {
+        return ["inspector.scroll", "captions.scroll", "ai.scroll", "layers.scroll", "import.scroll", "setup.scroll", "export.scroll", "export.sidebar"].first {
             let panel = app.scrollViews[$0]
             return panel.exists && x >= panel.frame.minX && x <= panel.frame.maxX
         }
@@ -86,7 +86,7 @@ extension EditorUITests {
         let prompt = app.textViews["generation.prompt"]; XCTAssertTrue(prompt.waitForExistence(timeout: 10)); edit(prompt, "A castle victory screen")
         let generate = app.buttons["Generate image"]; reveal(generate, panel: "ai.scroll"); generate.click()
         let add = app.buttons["Add to library"]; XCTAssertTrue(add.waitForExistence(timeout: 15)); reveal(add, panel: "ai.scroll"); add.click()
-        assertLabel("editor.status", "Imported 1 recording. Add one to your timeline.", timeout: 20)
+        assertLabel("editor.status", "Added 1 video. Click Add to put one on the timeline.", timeout: 20)
         let result = try save(); XCTAssertEqual(result.media.count, 3)
         XCTAssertTrue(FileManager.default.fileExists(atPath: result.media.last!.url.path))
         tab("Media")
@@ -118,7 +118,7 @@ extension EditorUITests {
     }
     func testLocalCaptionsUseSelectedOBSAudioTrack() throws {
         try installSpeechFixture(); launch(); tab("Captions")
-        app.popUpButtons["captions.audio-track"].click(); app.menuItems["Audio 2"].click()
+        app.popUpButtons["captions.audio-track"].click(); app.menuItems["Track 2"].click()
         waitEnabled(app.buttons["captions.generate"]); tapInPanel(app.buttons["captions.generate"])
         assertLabel("editor.status", "Created 1 captions locally. Review the wording and timing.", timeout: 15)
         let result = try save(); XCTAssertEqual(result.transcripts?.last?.audioTrack, 1)
@@ -131,7 +131,7 @@ extension EditorUITests {
     }
     func testLocalTranscriptionCancellationPreservesExistingCaptions() throws {
         try installSpeechFixture(mode: "slow"); launch(); tab("Captions"); waitEnabled(app.buttons["captions.generate"]); tapInPanel(app.buttons["captions.generate"])
-        let cancel = app.buttons["Cancel transcription"]; XCTAssertTrue(cancel.waitForExistence(timeout: 5)); if let panel = panelContaining(cancel) { reveal(cancel, panel: panel) }; cancel.click()
+        let cancel = app.buttons["Cancel captions"]; XCTAssertTrue(cancel.waitForExistence(timeout: 5)); if let panel = panelContaining(cancel) { reveal(cancel, panel: panel) }; cancel.click()
         waitEnabled(app.buttons["captions.generate"]); XCTAssertEqual(try save().captionTrack, project.captionTrack)
     }
     func testCaptionAppearancePersists() throws {
@@ -168,10 +168,10 @@ extension EditorUITests {
         let result = try save(); XCTAssertEqual(result.clips[0].adjustments?.mirror, true); XCTAssertEqual(result.clips[0].adjustments?.keyframes?.count, 1)
     }
     func testNewProjectCancelAndDiscardProtectEdits() throws {
-        launch(); app.buttons["workflow.mobileShort"].click(); app.typeKey("n", modifierFlags: .command)
+        launch(); chooseShort(); app.typeKey("n", modifierFlags: .command)
         let cancel = app.dialogs.buttons["Cancel"].firstMatch; XCTAssertTrue(cancel.waitForExistence(timeout: 5)); if let panel = panelContaining(cancel) { reveal(cancel, panel: panel) }; cancel.click()
         assertLabel("timeline.count", "1 clips")
-        app.typeKey("n", modifierFlags: .command); app.dialogs.buttons["Discard"].firstMatch.click()
+        app.typeKey("n", modifierFlags: .command); app.dialogs.buttons["Don’t Save"].firstMatch.click()
         assertLabel("project.name", "Untitled project"); XCTAssertFalse(app.buttons["project.export"].isEnabled)
     }
     func testRecoverAutosaveFromMenu() throws {

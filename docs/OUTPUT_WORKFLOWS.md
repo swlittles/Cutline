@@ -1,6 +1,6 @@
 # Output workflows
 
-Cutline separates **Mobile Short (9:16)** from **YouTube Video (16:9)**. New projects and automatic clips use Mobile Short. The Inspector selects the workflow explicitly; existing unclassified projects retain their framing and require a choice before export. Version-3 documents persist workflow, hooks and per-recording crops.
+Cutline separates **Mobile Short (9:16)** from **YouTube Video (16:9)**. New projects and automatic clips use Mobile Short. The guided **Clip a stream** flow always produces Mobile Shorts; in the editor, the Inspector's **Format** control selects the workflow explicitly; existing unclassified projects retain their framing and require a choice before export. Version-3 documents persist workflow, hooks and per-recording crops.
 
 ## Mobile shorts
 

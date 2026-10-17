@@ -9,17 +9,39 @@ final class EditorStore: ObservableObject {
     @Published var visibleCaptions: [ProjectedCaption] = []
     @Published var aiSectionCount = 0
     @Published var workspace = "Media"
-    @Published var clipSettings = AutoClipSettings()
+    @Published var mode: AppMode = .home
+    @Published var clipStep: ClipStep = .importVOD
+    @Published var clipSettings = AutoClipSettings() { didSet { if clipSettings != oldValue { clipSettingsChanged() } } }
     @Published var clipMediaID: UUID? { didSet { if clipMediaID != oldValue { clipSettings.hudCalibrated = false } } }
+    @Published var clipAnalysis: ClipAnalysis?
     @Published var clipReport: AutoClipReport?
-    @Published var selectedAutoClips = Set<String>()
+    @Published var focusedMoment: String?
     @Published var isScanningClips = false
     @Published var isExportingClips = false
+    @Published var isTranscribingClips = false
     @Published var clipProgress = 0.0
-    @Published var clipMessage = "Choose a recording to find clips locally."
+    @Published var clipMessage = "Import a recording to find moments locally."
     @Published var clipOutput: URL?
+    @Published var scenePresets: [ScenePreset] = []
+    @Published var trackNames: [UUID: [String?]] = [:]
+    @Published var auditioningTrack: Int?
+    @Published var parkedSession: ParkedSession?
+    @Published var recoverableSession: RecoverableSession?
+    @Published var exportFolder: URL = UserDefaults.standard.string(forKey: "export-folder").map { URL(fileURLWithPath: $0, isDirectory: true) } ?? EditorStore.defaultExportFolder
+    let reviewPlayer = AVPlayer()
+    let auditionPlayer = AVPlayer()
     var clipTask: Task<Void, Never>?
     var clipExportTask: Task<Void, Never>?
+    var clipEvaluateTask: Task<Void, Never>?
+    var clipSettingsTask: Task<Void, Never>?
+    var clipCaptionTask: Task<Void, Never>?
+    var reviewPreviewTask: Task<Void, Never>?
+    var reviewLoop: NSObjectProtocol?
+    var reviewPreviewProject: EditProject?
+    var reviewPreviewID: String?
+    var clipInflight: ClipVisualKey?
+    @Published var hookFocusRequest = 0
+    var keyMonitor: Any?
     var clipJobID = UUID()
     var clipProfiles: [String: AutoClipSettings] = [:]
     @Published var project = EditProject(workflow: .mobileShort)
@@ -76,7 +98,12 @@ final class EditorStore: ObservableObject {
         do { creatorProfile = try CreatorProfileStore.load() } catch { self.error = error.localizedDescription }
         if let data = try? Data(contentsOf: LocalTools.support.appendingPathComponent("autoclip-profiles.json")), let profiles = try? JSONDecoder().decode([String: AutoClipSettings].self, from: data) { clipProfiles = profiles }
         if let saved = clipProfiles["last"] { clipSettings = saved }; clipSettings.hudCalibrated = false
+        do { scenePresets = try ScenePresetStore.load() } catch { self.error = error.localizedDescription }
+        if LocalTools.testingRoot != nil { exportFolder = Self.defaultExportFolder }
+        refreshRecoverableSession()
         player.actionAtItemEnd = .pause
+        reviewPlayer.actionAtItemEnd = .pause
+        installReviewKeys()
         timeObserver = player.addPeriodicTimeObserver(forInterval: CMTime(seconds: 1.0 / 30, preferredTimescale: 600), queue: .main) { [weak self] _ in
             Task { @MainActor in
                 guard let self, self.isPlaying else { return }
@@ -110,11 +137,15 @@ final class EditorStore: ObservableObject {
     }
     func undo() {
         guard let previous = undoStack.popLast() else { return }
+        let moments = project.clipReview?.moments
         redoStack.append(project); project = previous; scheduleAutosave(); rebuild()
+        if project.clipReview?.moments != moments { evaluateMoments() }
     }
     func redo() {
         guard let next = redoStack.popLast() else { return }
+        let moments = project.clipReview?.moments
         undoStack.append(project); project = next; scheduleAutosave(); rebuild()
+        if project.clipReview?.moments != moments { evaluateMoments() }
     }
     func rebuild() {
         visibleCaptions = project.projectedCaptions()
@@ -145,15 +176,15 @@ final class EditorStore: ObservableObject {
     func importMedia() {
         let panel = NSOpenPanel()
         panel.canChooseFiles = true; panel.canChooseDirectories = false
-        panel.allowedContentTypes = [.movie, .mpeg4Movie, .quickTimeMovie, .image]
+        panel.allowedContentTypes = [.movie, .mpeg4Movie, .quickTimeMovie, .image] + MediaConversion.convertibleTypes
         panel.allowsMultipleSelection = true
-        panel.message = "Import gameplay, facecam, video recordings, or still images."
+        panel.message = "Choose videos or images to add."
         guard let window = NSApp.keyWindow ?? NSApp.mainWindow ?? NSApp.windows.first(where: { $0.canBecomeMain && !($0 is NSPanel) }) else { return }
         panel.beginSheetModal(for: window) { [weak self] response in
             if response == .OK { self?.importURLs(panel.urls) }
         }
     }
-    func importURLs(_ urls: [URL]) {
+    func importURLs(_ urls: [URL], then completion: (([MediaItem]) -> Void)? = nil) {
         guard !isImporting else { return }
         isImporting = true
         Task {
@@ -162,7 +193,12 @@ final class EditorStore: ObservableObject {
                 guard !project.media.contains(where: { $0.url == url }), !imported.contains(where: { $0.url == url }) else { continue }
                 do {
                     let isImage = UTType(filenameExtension: url.pathExtension)?.conforms(to: .image) == true
-                    let video = isImage ? try await StillImageClip.make(from: url) : url
+                    var video = isImage ? try await StillImageClip.make(from: url) : url
+                    if MediaConversion.needsConversion(url) {
+                        status = "Converting \(url.lastPathComponent) to MP4 (no quality loss)…"
+                        video = try await MediaConversion.convertToMP4(url)
+                        guard !project.media.contains(where: { $0.url == video }) else { continue }
+                    }
                     var item = try await CompositionEngine.inspect(video)
                     if isImage { item.displayName = url.deletingPathExtension().lastPathComponent }
                     imported.append(item)
@@ -171,13 +207,14 @@ final class EditorStore: ObservableObject {
             }
             if !imported.isEmpty {
                 commit { $0.media.append(contentsOf: imported) }
-                status = "Imported \(imported.count) recording\(imported.count == 1 ? "" : "s"). Add one to your timeline."
+                status = mode == .editor ? "Added \(imported.count) video\(imported.count == 1 ? "" : "s"). Click Add to put one on the timeline." : "Video ready."
             }
             isImporting = false
             if !failures.isEmpty { error = failures.joined(separator: "\n") }
+            completion?(imported)
         }
     }
-    private func loadThumbnail(_ media: MediaItem) async {
+    func loadThumbnail(_ media: MediaItem) async {
         let generator = AVAssetImageGenerator(asset: AVURLAsset(url: media.url))
         generator.appliesPreferredTrackTransform = true
         generator.maximumSize = CGSize(width: 480, height: 270)
@@ -250,9 +287,9 @@ final class EditorStore: ObservableObject {
     }
     func confirmDiscard() -> Bool {
         guard dirty else { return true }
-        let alert = NSAlert(); alert.messageText = "Save changes to this project?"
-        alert.informativeText = "Your source recordings are never modified. Unsaved timeline edits will be lost."
-        alert.addButton(withTitle: "Save"); alert.addButton(withTitle: "Cancel"); alert.addButton(withTitle: "Discard")
+        let alert = NSAlert(); alert.messageText = project.clipReview != nil ? "Save this clipping session first?" : "Save your changes first?"
+        alert.informativeText = "If you don’t save, changes since your last save are lost. Your original videos are never changed."
+        alert.addButton(withTitle: "Save…"); alert.addButton(withTitle: "Cancel"); alert.addButton(withTitle: "Don’t Save")
         switch alert.runModal() {
         case .alertFirstButtonReturn: return save()
         case .alertThirdButtonReturn: return true
@@ -262,8 +299,9 @@ final class EditorStore: ObservableObject {
     func newProject() {
         guard !isImporting, !isExporting, confirmDiscard() else { return }
         resetJobs()
-        project = EditProject(workflow: .mobileShort); status = "Your next highlight starts here."; savedProject = project; projectURL = nil
+        project = EditProject(workflow: .mobileShort); status = "Your next highlight starts here."; savedProject = project; projectURL = nil; parkedSession = nil
         selectedClipID = nil; thumbnails = [:]; undoStack = []; redoStack = []; rebuild()
+        if mode == .clipper { clipStep = .importVOD }
     }
     @discardableResult func save(as: Bool = false) -> Bool {
         var destination = projectURL
@@ -278,6 +316,7 @@ final class EditorStore: ObservableObject {
             var snapshot = project; snapshot.name = url.deletingPathExtension().lastPathComponent
             try snapshot.write(to: url)
             project = snapshot; projectURL = url; savedProject = snapshot
+            NSDocumentController.shared.noteNewRecentDocumentURL(url)
             autosaveTask?.cancel()
             try? FileManager.default.removeItem(at: recoveryURL)
             status = "Project saved."; return true
@@ -296,9 +335,11 @@ final class EditorStore: ObservableObject {
         do {
             let loaded = try EditProject.read(from: url)
             resetJobs()
-            project = loaded; savedProject = loaded; projectURL = url
+            project = loaded; savedProject = loaded; projectURL = url; parkedSession = nil
             undoStack = []; redoStack = []; selectedClipID = nil; thumbnails = [:]; playhead = 0
             rebuild(); status = "Opened \(loaded.name)."
+            NSDocumentController.shared.noteNewRecentDocumentURL(url)
+            resumeSessionOrEdit()
             Task { for item in loaded.media { await loadThumbnail(item) } }
         } catch { self.error = error.localizedDescription }
     }

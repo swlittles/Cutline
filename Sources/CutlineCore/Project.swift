@@ -22,6 +22,7 @@ public struct MediaItem: Codable, Identifiable, Equatable, Sendable {
     public var audioTrackCount: Int?
     public var displayName: String?
     public var shortFraming: ShortFraming?
+    public var audioRoles: [AudioRole]?
     public func sameSource(as other: MediaItem) -> Bool { id == other.id && url == other.url && duration == other.duration && audioTrackCount == other.audioTrackCount }
     public var name: String { displayName ?? url.deletingPathExtension().lastPathComponent }
     public init(id: UUID = UUID(), url: URL, duration: Double) {
@@ -60,6 +61,7 @@ public struct EditProject: Codable, Equatable, Sendable {
     public var markers: [HighlightMarker]?
     public var overlays: [OverlayClip]?
     public var music: [AudioClip]?
+    public var clipReview: ClipReview?
     public var options: ProjectSettings { get { settings ?? ProjectSettings() } set { settings = newValue } }
     public var duration: Double { clips.reduce(0) { $0 + $1.duration } }
     public init(workflow: OutputWorkflow? = .mobileShort) {

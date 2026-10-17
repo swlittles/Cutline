@@ -10,12 +10,14 @@ extension EditorStore {
     var recoveryURL: URL { LocalTools.support.appendingPathComponent("Recovery/autosave.cutline") }
     func scheduleAutosave() {
         autosaveTask?.cancel()
-        let snapshot = project, url = recoveryURL
+        let snapshot = project, url = recoveryURL, session = sessionRecoveryURL
         autosaveTask = Task {
             do {
                 try await Task.sleep(nanoseconds: 700_000_000)
                 try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
                 try snapshot.write(to: url)
+                // Clipping sessions also keep their own copy, so Home can resume them after a relaunch.
+                if snapshot.clipReview != nil { try snapshot.write(to: session) }
             } catch is CancellationError {} catch { status = "Autosave failed: \(error.localizedDescription)" }
         }
     }
@@ -23,8 +25,9 @@ extension EditorStore {
         guard !isImporting, !isExporting, confirmDiscard() else { return }
         do {
             let recovered = try EditProject.read(from: recoveryURL)
-            resetJobs(); project = recovered; savedProject = EditProject(); projectURL = nil
+            resetJobs(); project = recovered; savedProject = EditProject(); projectURL = nil; parkedSession = nil
             undoStack = []; redoStack = []; selectedClipID = nil; playhead = 0; rebuild()
+            resumeSessionOrEdit()
             status = "Recovered unsaved edits. Save this project to keep them."
         } catch { self.error = error.localizedDescription }
     }
@@ -43,14 +46,26 @@ extension EditorStore {
     }
     func transcribe() {
         guard let media = transcriptionMedia, !isTranscribing else { return }
-        let epoch = projectEpoch, model = speechModel, audioTrack = transcriptionAudioTrack, language = transcriptionLanguage, vocabulary = transcriptionVocabulary
+        let epoch = projectEpoch, model = speechModel, audioTrack = transcriptionAudioTrack, language = transcriptionLanguage, vocabulary = transcriptionVocabulary, engine = captionEngine
+        guard engine == .whisper || engine == .apple else { error = "Captions aren’t available on this Mac yet."; return }
         isTranscribing = true; transcriptionProgress = 0; transcriptionMessage = "Preparing your recording…"
         transcriptionTask = Task {
             do {
-                let result = try await LocalTranscription.transcribe(media: media, audioTrack: audioTrack, model: model, language: language, vocabulary: vocabulary) { [weak self] progress in
-                    Task { @MainActor in
-                        guard let self, self.projectEpoch == epoch else { return }
-                        self.transcriptionProgress = progress.fraction; self.transcriptionMessage = progress.message
+                let result: SourceTranscript
+                if engine == .apple {
+                    let segments = try await AppleSpeech.transcribe(media: media, audioTrack: audioTrack, range: ClipRange(start: 0, end: media.duration)) { [weak self] fraction in
+                        Task { @MainActor in
+                            guard let self, self.projectEpoch == epoch else { return }
+                            self.transcriptionProgress = fraction; self.transcriptionMessage = "Making captions… \(Int(fraction * 100))%"
+                        }
+                    }
+                    result = SourceTranscript(mediaID: media.id, audioTrack: audioTrack, language: Locale.current.language.languageCode?.identifier ?? "auto", segments: segments)
+                } else {
+                    result = try await LocalTranscription.transcribe(media: media, audioTrack: audioTrack, model: model, language: language, vocabulary: vocabulary) { [weak self] progress in
+                        Task { @MainActor in
+                            guard let self, self.projectEpoch == epoch else { return }
+                            self.transcriptionProgress = progress.fraction; self.transcriptionMessage = progress.message
+                        }
                     }
                 }
                 guard projectEpoch == epoch, project.media.contains(where: { $0.id == media.id && $0.url == media.url }) else { return }

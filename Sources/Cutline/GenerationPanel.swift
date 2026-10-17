@@ -32,7 +32,7 @@ struct GenerationPanel: View {
                 Text("Sends this prompt to OpenRouter and its provider. Uses your OpenRouter credits. Generated assets are saved locally; nothing from your timeline is uploaded.").font(.system(size: 10)).foregroundStyle(Studio.muted)
                 Button("Generate \(kind.rawValue)") {
                     if let model { store.generateMedia(kind: kind, model: model, prompt: prompt, ratio: ratio, resolution: resolution, duration: duration) }
-                }.buttonStyle(.borderedProminent).disabled(store.isGenerating || prompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || model == nil)
+                }.buttonStyle(.primary).disabled(store.isGenerating || prompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || model == nil)
             }
             if store.isGenerating {
                 ProgressView()

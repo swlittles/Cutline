@@ -33,11 +33,21 @@ import CutlineCore
         app.terminate()
         try? FileManager.default.removeItem(at: root)
     }
-    func launch(project loaded: Bool = true, select: Bool = true) {
-        app.launchArguments = ["-NSTreatUnknownArgumentsAsOpen", "NO", "-ApplePersistenceIgnoreState", "YES"] + (loaded ? ["--project", projectURL.path] : [])
+    /// Without a project the app opens on Home; most tests continue into the editor.
+    /// A saved clipping session opens in the guided clipper instead.
+    /// Advanced editing tools are on by default so every control is reachable; simple mode has its own test.
+    func launch(project loaded: Bool = true, select: Bool = true, home: Bool = false, clipper: Bool = false, advanced: Bool = true) {
+        app.launchArguments = ["-NSTreatUnknownArgumentsAsOpen", "NO", "-ApplePersistenceIgnoreState", "YES", "-editor-advanced", advanced ? "YES" : "NO"] + (loaded ? ["--project", projectURL.path] : [])
         app.launch(); app.activate()
-        XCTAssertTrue(app.buttons["media.import"].waitForExistence(timeout: 10))
+        if clipper {
+            XCTAssertTrue(app.descendants(matching: .any)["clipper"].firstMatch.waitForExistence(timeout: 10))
+        } else if !loaded {
+            XCTAssertTrue(app.buttons["home.clip"].waitForExistence(timeout: 10))
+            if !home { app.buttons["home.openEditor"].click() }
+        }
+        if !home && !clipper { XCTAssertTrue(app.buttons["media.import"].waitForExistence(timeout: 10)) }
         XCTAssertTrue(FileManager.default.fileExists(atPath: root.appendingPathComponent("runtime-ready").path), "UI tests require the isolated Debug runtime")
+        if home || clipper { return }
         app.staticTexts["project.name"].click()
         if loaded { waitEnabled(app.buttons["project.export"]); assertLabel("timeline.count", "\(project.clips.count) clips"); if select { selectClip() } }
     }
@@ -64,6 +74,7 @@ import CutlineCore
         if submit { field.typeKey(.return, modifierFlags: []) }
     }
     func tab(_ name: String) { app.radioButtons[name].click() }
+    func chooseShort() { app.radioButtons["Short · 9:16"].click() }
     func save() throws -> EditProject {
         app.typeKey("s", modifierFlags: .command)
         assertLabel("editor.status", "Project saved.")
@@ -130,9 +141,9 @@ import CutlineCore
         let result = try save(); XCTAssertEqual(result.clips[0].sourceIn, 1); XCTAssertEqual(result.clips[0].sourceOut, 4); XCTAssertEqual(result.clips[0].volume, 0)
     }
     func testCanvasResolutionAndFrameRatePersist() throws {
-        launch(); app.buttons["workflow.mobileShort"].click()
+        launch(); chooseShort()
         app.popUpButtons["export.quality"].click(); app.menuItems["1080p"].click()
-        app.popUpButtons["export.fps"].click(); app.menuItems["60"].click()
+        app.popUpButtons["export.fps"].click(); app.menuItems["60 fps"].click()
         let result = try save(); XCTAssertEqual(result.format, .portrait); XCTAssertEqual(result.options.fps, 60); XCTAssertEqual(result.options.resolution, 1080)
     }
     func testCaptionTextSearchEditAndDelete() throws {
@@ -151,7 +162,7 @@ import CutlineCore
         app.typeKey("z", modifierFlags: .command); assertLabel("captions.count", "2 CAPTIONS")
     }
     func testCaptionCutAndUndo() throws {
-        launch(); tab("Captions"); reveal(app.buttons["Cut this range from video"].firstMatch, panel: "captions.scroll"); app.buttons["Cut this range from video"].firstMatch.click()
+        launch(); tab("Captions"); reveal(app.buttons["Cut this part from the video"].firstMatch, panel: "captions.scroll"); app.buttons["Cut this part from the video"].firstMatch.click()
         assertLabel("timeline.count", "2 clips"); assertLabel("captions.count", "1 CAPTIONS")
         XCTAssertEqual(try save().duration, 4, accuracy: 0.001)
         app.typeKey("z", modifierFlags: .command); assertLabel("timeline.count", "1 clips"); assertLabel("captions.count", "2 CAPTIONS")

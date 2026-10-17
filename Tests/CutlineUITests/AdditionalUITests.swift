@@ -40,7 +40,8 @@ extension EditorUITests {
         XCTAssertEqual(try save().captionTrack, project.captionTrack)
     }
     func testModelDownloadFailureKeepsCaptionActionDisabled() throws {
-        launch(); tab("Captions"); app.buttons["Download speech model"].click()
+        try installSpeechFixture(); try FileManager.default.removeItem(at: root.appendingPathComponent("Models/ggml-base.bin"))
+        launch(); tab("Captions"); tapInPanel(app.buttons["Download speech model (148 MB)"])
         textExists("Model download failed")
         app.sheets.buttons["OK"].firstMatch.click()
         XCTAssertFalse(app.buttons["captions.generate"].isEnabled)
@@ -121,7 +122,7 @@ extension EditorUITests {
         try "video-complete".write(to: root.appendingPathComponent("ai-mode"), atomically: true, encoding: .utf8)
         tapInPanel(resume)
         let add = app.buttons["Add to library"]; XCTAssertTrue(add.waitForExistence(timeout: 15)); tapInPanel(add)
-        assertLabel("editor.status", "Imported 1 recording. Add one to your timeline.")
+        assertLabel("editor.status", "Added 1 video. Click Add to put one on the timeline.")
         let result = try save(); XCTAssertEqual(result.media.count, 3); XCTAssertEqual(result.media.last?.duration ?? 0, 5, accuracy: 0.1)
         let requests = try String(contentsOf: root.appendingPathComponent("request-log"), encoding: .utf8).components(separatedBy: "\n")
         XCTAssertEqual(requests.filter { $0 == "POST /api/v1/videos" }.count, 1)

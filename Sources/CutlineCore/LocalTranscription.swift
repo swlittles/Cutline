@@ -113,21 +113,24 @@ public struct TranscriptionProgress: Sendable {
 }
 
 public enum LocalTranscription {
-    public static func transcribe(media: MediaItem, audioTrack: Int, model: WhisperModel, language: String = "auto", vocabulary: String = "", progress: @escaping @Sendable (TranscriptionProgress) -> Void) async throws -> SourceTranscript {
+    /// `range` limits work to part of the source, such as one kept clip, instead of the whole recording.
+    public static func transcribe(media: MediaItem, audioTrack: Int, model: WhisperModel, language: String = "auto", vocabulary: String = "", range: ClipRange? = nil, progress: @escaping @Sendable (TranscriptionProgress) -> Void) async throws -> SourceTranscript {
         let whisper = try LocalTools.require("whisper-cli"), ffmpeg = try LocalTools.require("ffmpeg")
         guard model.installed else { throw EditError.invalid("Download a speech model in the Captions panel first.") }
         guard audioTrack >= 0 else { throw EditError.invalid("Choose a valid audio track.") }
+        let origin = max(0, range?.start ?? 0), finish = min(media.duration, range?.end ?? media.duration)
+        guard origin.isFinite, finish.isFinite, finish > origin else { throw EditError.invalid("Choose a valid range to transcribe.") }
         let workspace = FileManager.default.temporaryDirectory.appendingPathComponent("cutline-transcribe-\(UUID())", isDirectory: true)
         try FileManager.default.createDirectory(at: workspace, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: workspace) }
         // Bound memory and make cancellation responsive even for multi-hour streams.
         let chunkDuration = 300.0
-        let count = max(1, Int(ceil(media.duration / chunkDuration)))
+        let count = max(1, Int(ceil((finish - origin) / chunkDuration)))
         var segments: [TranscriptSegment] = []
         for index in 0..<count {
             try Task.checkCancellation()
-            let start = Double(index) * chunkDuration
-            let length = min(chunkDuration, media.duration - start)
+            let start = origin + Double(index) * chunkDuration
+            let length = min(chunkDuration, finish - start)
             let wav = workspace.appendingPathComponent("chunk.wav"), output = workspace.appendingPathComponent("transcript")
             progress(.init(fraction: Double(index) / Double(count), message: "Decoding \(media.name) · section \(index + 1)/\(count)"))
             _ = try await ProcessRunner.run(ffmpeg, ["-hide_banner", "-loglevel", "error", "-nostdin", "-y", "-ss", String(start), "-i", media.url.path, "-t", String(length), "-map", "0:a:\(audioTrack)", "-vn", "-ar", "16000", "-ac", "1", "-c:a", "pcm_s16le", wav.path])

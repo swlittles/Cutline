@@ -37,6 +37,17 @@ FRAMEWORK="$APP/Contents/Frameworks/Sparkle.framework"
 SIGN_ARGS=(--force --sign "$IDENTITY")
 if [ "$IDENTITY" != - ]; then SIGN_ARGS+=(--options runtime --timestamp); fi
 for component in "$FRAMEWORK/Versions/B/Autoupdate" "$FRAMEWORK/Versions/B/Updater.app" "$FRAMEWORK/Versions/B/XPCServices/Downloader.xpc" "$FRAMEWORK/Versions/B/XPCServices/Installer.xpc" "$FRAMEWORK"; do codesign "${SIGN_ARGS[@]}" "$component"; done
+# Optional self-contained helpers (static ffmpeg, whisper-cli) so MKV conversion and Whisper
+# captions work without Homebrew. Captions fall back to macOS speech recognition without them.
+if [ -n "${CUTLINE_HELPERS_DIR:-}" ]; then
+  mkdir -p "$APP/Contents/Helpers"
+  for helper in ffmpeg whisper-cli; do
+    if [ -x "$CUTLINE_HELPERS_DIR/$helper" ]; then
+      if otool -L "$CUTLINE_HELPERS_DIR/$helper" | tail -n +2 | grep -qE '/(opt/homebrew|usr/local)/'; then echo "$helper links Homebrew libraries; supply a self-contained build." >&2; exit 1; fi
+      cp "$CUTLINE_HELPERS_DIR/$helper" "$APP/Contents/Helpers/$helper"; codesign "${SIGN_ARGS[@]}" "$APP/Contents/Helpers/$helper"
+    fi
+  done
+fi
 python3 scripts/make-plist.py "$APP/Contents/Info.plist" "$APP_NAME" "$BUNDLE_ID" "$VERSION" "$BUILD_NUMBER" "${CUTLINE_RELEASE_CHANNEL:-stable}"
 cp LICENSE docs/THIRD_PARTY_NOTICES.txt docs/Sparkle-LICENSE.txt "$APP/Contents/Resources/"
 codesign "${SIGN_ARGS[@]}" "$APP"

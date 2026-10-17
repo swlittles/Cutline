@@ -163,14 +163,20 @@ final class AutoClipTests: XCTestCase {
         let c = AutoClipCandidate(id: "one", start: 4, end: 8, score: 20, evidence: [event(5)])
         let report = AutoClipReport(media: media, settings: AutoClipSettings(), candidates: [c], evidence: c.evidence)
         var options = ProjectSettings(); options.resolution = 720
-        let output = try await AutoClipBatch.export(report: report, candidates: [c], to: root, options: options, hooks: [c.id: "Watch this play"], branding: ShortBranding(text: "example.test/player"))
+        let output = try await AutoClipBatch.export(report: report, candidates: [c], to: root, name: "Friday stream shorts", options: options, hooks: [c.id: "Watch this play"], branding: ShortBranding(text: "example.test/player"))
+        XCTAssertEqual(output.lastPathComponent, "Friday stream shorts")
         let files = try FileManager.default.contentsOfDirectory(at: output, includingPropertiesForKeys: nil)
+        XCTAssertEqual(files.map(\.lastPathComponent).sorted(), ["01 - Watch this play.mp4", AutoClipBatch.projectsFolder], "Only the shorts sit at the top level")
         let video = try XCTUnwrap(files.first { $0.pathExtension == "mp4" })
         let exported = try await CompositionEngine.inspect(video); XCTAssertEqual(exported.duration, 4, accuracy: 0.1)
-        let project = try EditProject.read(from: XCTUnwrap(files.first { $0.pathExtension == "cutline" }))
+        let projects = output.appendingPathComponent(AutoClipBatch.projectsFolder)
+        let project = try EditProject.read(from: projects.appendingPathComponent("01 - Watch this play.cutline"))
         XCTAssertEqual(project.clips[0].sourceIn, 4); XCTAssertEqual(project.media[0].url, media.url)
-        XCTAssertEqual(try JSONDecoder().decode(AutoClipReport.self, from: Data(contentsOf: output.appendingPathComponent("analysis.json"))), report)
+        XCTAssertEqual(try JSONDecoder().decode(AutoClipReport.self, from: Data(contentsOf: projects.appendingPathComponent("analysis.json"))), report)
         XCTAssertFalse(try FileManager.default.contentsOfDirectory(atPath: root.path).contains { $0.hasPrefix(".cutline") })
+        // A second export never overwrites the first.
+        let again = try await AutoClipBatch.export(report: report, candidates: [c], to: root, name: "Friday stream shorts", options: options, hooks: [c.id: "Watch this play"], branding: ShortBranding(text: "example.test/player"))
+        XCTAssertEqual(again.lastPathComponent, "Friday stream shorts 2")
     }
     func testCancelledBatchLeavesNoPartialFolder() async throws {
         let root = try Fixtures.temporary(); defer { try? FileManager.default.removeItem(at: root) }
