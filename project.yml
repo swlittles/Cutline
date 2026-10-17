@@ -23,11 +23,15 @@ targets:
   Cutline:
     type: application
     platform: macOS
-    sources: [Sources/Cutline]
+    sources:
+      - Sources/Cutline
+      - path: Config/AppIcon.icns
+        buildPhase: resources
     info:
       path: Config/Info.plist
       properties:
         CFBundleDisplayName: Cutline Test Build
+        CFBundleIconFile: AppIcon
         CFBundleShortVersionString: '0.5.0'
         CFBundleVersion: '8'
         NSPrincipalClass: NSApplication

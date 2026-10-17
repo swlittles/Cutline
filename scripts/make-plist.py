@@ -4,7 +4,7 @@ import plistlib, sys
 from pathlib import Path
 path, name, identifier, version, build, channel = sys.argv[1:]
 info = dict(CFBundleName=name, CFBundleDisplayName=name, CFBundleIdentifier=identifier,
-            CFBundleExecutable='Cutline', CFBundlePackageType='APPL', CFBundleShortVersionString=version,
+            CFBundleExecutable='Cutline', CFBundleIconFile='AppIcon', CFBundlePackageType='APPL', CFBundleShortVersionString=version,
             CFBundleVersion=build, LSMinimumSystemVersion='14.0', NSHighResolutionCapable=True,
             NSPrincipalClass='NSApplication', CutlineReleaseChannel=channel,
             NSSpeechRecognitionUsageDescription='Cutline turns the speech in your clips into captions, on this Mac.',

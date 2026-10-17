@@ -122,7 +122,7 @@ extension EditorUITests {
         textExists("Check scan thresholds")
         edit(app.textFields["clips.maximum"], "60", submit: true)
         tapInPanel(app.buttons["clips.regions"])
-        XCTAssertTrue(app.sliders["clips.regionTime"].waitForExistence(timeout: 5)); app.buttons["Done"].firstMatch.click()
+        XCTAssertTrue(app.sliders["clips.regionTime"].waitForExistence(timeout: 5)); app.buttons["regions.done"].click()
     }
 
     func testEditingAClipKeepsTheSessionAndReturns() throws {

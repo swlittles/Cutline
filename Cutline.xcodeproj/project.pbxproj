@@ -75,6 +75,7 @@
 		C4D1DC557796E5602D878A7C /* Updates.swift in Sources */ = {isa = PBXBuildFile; fileRef = A60D4E3BD48C1BBE359DC0BB /* Updates.swift */; };
 		C57DE0191DA8CE79BEF16842 /* ClipperActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBA11A57548E540297A899CA /* ClipperActions.swift */; };
 		C66F68C3C31FEE475E6BB4EA /* facecam.mp4 in Resources */ = {isa = PBXBuildFile; fileRef = C3FB1F59612025327ACF8B40 /* facecam.mp4 */; };
+		C6B970A4206B971004479758 /* AppIcon.icns in Resources */ = {isa = PBXBuildFile; fileRef = 5DE53015BC9E50BCAC5947F9 /* AppIcon.icns */; };
 		C9255AC783260C22EE0171FE /* ClipHUD.swift in Sources */ = {isa = PBXBuildFile; fileRef = F950B72B031856EA8DCCE922 /* ClipHUD.swift */; };
 		CAEF6EB4236E89D27A61A2CD /* AutoClipping.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0324D7ED6CDBEBA41C9B8F1 /* AutoClipping.swift */; };
 		CC8D269FE5D20636AA2F979E /* captions.srt in Resources */ = {isa = PBXBuildFile; fileRef = A656FACB90A2EBEBC1466257 /* captions.srt */; };
@@ -216,6 +217,7 @@
 		501833418DB52BB43055021F /* ClipperSheets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipperSheets.swift; sourceTree = "<group>"; };
 		5425CEE0C623A89F3801B1C2 /* AutoClipBatch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoClipBatch.swift; sourceTree = "<group>"; };
 		5D8E9F5C5BCA55C38CFEE3A7 /* AdditionalUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdditionalUITests.swift; sourceTree = "<group>"; };
+		5DE53015BC9E50BCAC5947F9 /* AppIcon.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon.icns; sourceTree = "<group>"; };
 		6086A46CE0C05750B061D5E7 /* FeatureActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureActions.swift; sourceTree = "<group>"; };
 		60CB732C536DBA6BA434F499 /* CompositionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompositionTests.swift; sourceTree = "<group>"; };
 		68C11B848DBC15AC1CEAB2CE /* ExportDestination.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportDestination.swift; sourceTree = "<group>"; };
@@ -330,6 +332,7 @@
 			children = (
 				22F8FBC51BCBECDECBCBA016 /* Fixtures */,
 				1C0758FA846684BEF0CF9701 /* Helpers */,
+				D58FE8FF09ABD97D01067285 /* Config */,
 				C1B7679D41B3D9D30FD7ECF9 /* Cutline */,
 				B193709EC006F97A3F625D6E /* CutlineAppTests */,
 				EA64D7BFC4F0FDCA150159A3 /* CutlineCore */,
@@ -423,6 +426,14 @@
 			path = Sources/Cutline;
 			sourceTree = "<group>";
 		};
+		D58FE8FF09ABD97D01067285 /* Config */ = {
+			isa = PBXGroup;
+			children = (
+				5DE53015BC9E50BCAC5947F9 /* AppIcon.icns */,
+			);
+			path = Config;
+			sourceTree = "<group>";
+		};
 		EA64D7BFC4F0FDCA150159A3 /* CutlineCore */ = {
 			isa = PBXGroup;
 			children = (
@@ -492,6 +503,7 @@
 			buildConfigurationList = 65D586E46FCA6F94A0D4BC9B /* Build configuration list for PBXNativeTarget "Cutline" */;
 			buildPhases = (
 				7D811C6E554D7ECC18C56C24 /* Sources */,
+				5414366B16DCDB70A7F916A2 /* Resources */,
 				6D6B68B5FADA7A0E658662DD /* Frameworks */,
 				E444D084E29787AF53192710 /* Embed Frameworks */,
 			);
@@ -622,6 +634,14 @@
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		5414366B16DCDB70A7F916A2 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C6B970A4206B971004479758 /* AppIcon.icns in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		76B6331F60AA5ED3C3B98AA9 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;

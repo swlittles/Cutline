@@ -27,5 +27,6 @@ A guided, four-step path from a stream recording to finished shorts, a simpler e
 ## Look and feel
 
 - A warm ivory/slate palette with a terracotta accent, consistent across every screen, in **Light**, **Dark** or **System** appearance (header button, View → Appearance, or Settings).
+- Cutline has an app icon in the Dock, Finder and Spotlight.
 
 Requires macOS 14 or later. macOS asks for Speech Recognition permission the first time you make captions. Converting MKV needs FFmpeg; without it, Cutline explains how to remux in OBS. Crop calibration is per layout; mixed OBS scenes still need checking. Detection measures activity, not quality: review each moment before posting. Cutline remains an early development version without full CapCut parity.

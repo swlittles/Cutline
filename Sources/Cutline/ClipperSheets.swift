@@ -131,7 +131,7 @@ struct RegionCalibrationSheet: View {
             Text("Source \(clockTime(time))").font(.system(size: 11)).foregroundStyle(Studio.muted)
             HStack {
                 Toggle("HUD checked on this recording", isOn: $store.clipSettings.hudCalibrated)
-                Spacer(); Button("Done") { dismiss() }.buttonStyle(.primary).keyboardShortcut(.cancelAction)
+                Spacer(); Button("Done") { dismiss() }.buttonStyle(.primary).keyboardShortcut(.cancelAction).accessibilityIdentifier("regions.done")
             }
         }.padding(24).background(Studio.base).task(id: time) {
             do {
