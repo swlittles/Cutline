@@ -4,25 +4,61 @@ IMPORTANT: This file was signed by Sparkle. Any modifications to this file requi
     <channel>
         <title>Cutline</title>
         <item>
-            <title>0.4.1</title>
-            <pubDate>Mon, 14 Sep 2026 04:15:22 +0000</pubDate>
-            <sparkle:version>7</sparkle:version>
-            <sparkle:shortVersionString>0.4.1</sparkle:shortVersionString>
+            <title>0.5.0</title>
+            <pubDate>Sun, 18 Oct 2026 03:12:35 +0000</pubDate>
+            <sparkle:version>8</sparkle:version>
+            <sparkle:shortVersionString>0.5.0</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-            <description sparkle:format="markdown"><![CDATA[# Cutline 0.4.1
+            <description sparkle:format="markdown"><![CDATA[# Cutline 0.5.0
 
-Privacy update for the public release: all game profiles now start with empty player aliases. Enter your own on-screen names before enabling local HUD OCR. Existing locally saved scan preferences remain on your Mac.
+A guided, four-step path from a stream recording to finished shorts, a simpler editor, and a new look in light and dark.
 
-Developer signing identity and GitHub publication destinations are configuration values, with no creator-specific defaults in the source. Historical personal identifiers have been removed from repository content and commit metadata.
+## Clip a stream in four steps
 
-The affected 0.4.0 download was withdrawn. This release retains the existing editing and automatic-clipping behavior; the new mobile composition and local branding Settings are being developed separately on dev.
+- **Video → Layout → Pick clips → Export.** Cutline starts finding moments the moment you choose a recording, and the list fills in while you check the layout.
+- **OBS MKV recordings work directly.** MKV, FLV and TS files are copied into an MP4 beside the original without re-encoding, keeping every audio track. An existing MP4 of the same name (for example from OBS's own remux) is reused.
+- **Layout once, then skip it.** Drag the facecam and gameplay boxes on a real frame with a live 9:16 preview. Sound and game have sensible defaults; plain-language track roles (Everything / My voice / Game / Not used) are one click away. Layouts are remembered by default, so the next stream goes straight to picking clips.
+- **Pick clips with the finished short playing.** Keep always works: an empty hook gets the suggested one, in the same undo step. Labelled Start/End buttons and drag handles trim; a Fewer ↔ More slider changes how many moments appear instantly; **Add a moment** marks plays you remember. Detection settings stay out of the way behind one button.
+- **One-button export.** Shorts save to `~/Movies/Cutline/<stream> shorts/` without a file dialog. Editable projects and the scan report sit in an **Editable projects** subfolder.
+- **Captions without setup.** Turn on captions and Cutline writes them for the kept clips when you export, using macOS on-device speech recognition. Whisper is used instead when it is installed with a model. Audio never leaves the Mac.
+- **Edit a clip without losing your picks.** **Edit this clip…** opens one moment in the editor; **Back to my clips** returns with every decision, hook and trim. Sessions autosave, and Home offers to continue after a relaunch.
 
-Requires macOS 14 or later. Universal Apple silicon / Intel app, Developer ID signed and Apple-notarized. Local audio/motion/OCR clipping requires no paid AI API. Cutline remains an early development version without full CapCut parity.
+## Kick and Twitch channel badges
+
+- Shorts carry a **channel badge**: your platform's logo and @username in a rounded container, Kick green or Twitch purple.
+- Save your Kick and Twitch usernames in **Settings → Your channel** or the Layout step (pasting a channel address works), and choose which badge shorts show.
+- **Drag the badge** anywhere on the 9:16 preview and set its size. It starts centred on the strip between facecam and gameplay; previews and exports match exactly.
+- An existing "channel name" setting carries over to the matching platform's badge.
+
+## Let an AI agent do the editing
+
+- **Claude Code and Codex can use Cutline.** Connect them in **Settings → AI agents** with one click (or a copied command). Then ask in plain words: "find the best moments in my stream and make five shorts", "trim the intro and add music", "add captions and export".
+- Agents find moments, look at frames, cut, trim, reorder, set hooks, layouts, captions and music, and export shorts or full videos, using the same engine and saved layouts as the app. Rendering happens on this Mac; the agent's own service sees what the tools return, such as file paths, timings, captions and the frames it looks at.
+- A project open in Cutline updates live as the agent works; **⌘Z** undoes each change, and Cutline asks before replacing your unsaved edits.
+
+## A simpler editor
+
+- **Simple** mode shows what most edits need: import, Add to timeline, Start here / End here trimming, volume, captions, hook, layout and Export. **Advanced** adds layers, AI, numeric trims, transform/speed/color and per-track audio.
+- Clear empty states, plain-language messages, and Export explains what is missing.
+
+## Mobile shorts
+
+- New projects default to **Short · 9:16**; **YouTube · 16:9** is an explicit Format choice.
+- Every short uses 30% facecam, a 2% black divider, your Kick or Twitch channel badge, and 68% gameplay. Each clip has a hook for its first three seconds; timeline clips can override the shared hook.
+- Older projects keep their framing on open and require a format choice before export. Version-3 project files preserve hooks and crops and are rejected by older apps instead of silently losing the layout.
+- Creator branding has no personal defaults and is saved only on this Mac.
+
+## Look and feel
+
+- A warm ivory/slate palette with a terracotta accent, consistent across every screen, in **Light**, **Dark** or **System** appearance (header button, View → Appearance, or Settings).
+- Cutline has an app icon in the Dock, Finder and Spotlight.
+
+Requires macOS 14 or later. macOS asks for Speech Recognition permission the first time you make captions. Converting MKV needs FFmpeg; without it, Cutline explains how to remux in OBS. Crop calibration is per layout; mixed OBS scenes still need checking. Detection measures activity, not quality: review each moment before posting. Cutline remains an early development version without full CapCut parity.
 ]]></description>
-            <enclosure url="https://github.com/swlittles/Cutline/releases/download/v0.4.1/Cutline-0.4.1-macos-universal.zip" length="3430561" type="application/octet-stream" sparkle:edSignature="3MW7NhnY5kje7Ric7OHWy0taNeK1+lw9dpJuzMkizimHWgODJqRS8Nc6GXFWU2XQiBqt7Dr6Q7rdAp8DEHYkCw=="></enclosure>
+            <enclosure url="https://github.com/swlittles/Cutline/releases/download/v0.5.0/Cutline-0.5.0-macos-universal.zip" length="7408223" type="application/octet-stream" sparkle:edSignature="KCWuAr9k8uhNBKxpepoYvlDsUbCkxpL+gC2HulJv0lRxvoWRZ5brQ0YYwvOh6oCesY42tTVVq9syxT1mUu/gCA=="></enclosure>
         </item>
     </channel>
 </rss><!-- sparkle-signatures:
-edSignature: IuCZ8hOJMv2J63kBNIeltcC4bfH2SKMh4Y4hVsqQzqHPIetu3PujfwfDlBBRQ6W7QNaTOgXzaGVRW9nN0GgGBQ==
-length: 2050
+edSignature: pMBtXQea9MI35wP/JQ36Spla8BbYQXM3n2UB32R9tjJSnaOsyDRAyktWgNONQm5wVhbr8ABCDmN5j6UMDA1HDQ==
+length: 5981
 -->
