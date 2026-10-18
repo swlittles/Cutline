@@ -4,7 +4,7 @@ import CutlineCore
 extension EditorUITests {
     /// A saved clipping session: branded, framed, Track 1 = mic (with the fixture's burst).
     func prepareAutoClipRecording(roles: [AudioRole] = [.mic, .ignore], decisions: Bool = false) throws {
-        try CreatorProfileStore.save(ShortBranding(text: "example.test/player"), to: root)
+        try CreatorProfileStore.save(ShortBranding(kick: "player"), to: root)
         var media = MediaItem(url: fixture.appendingPathComponent("autoclip.mp4"), duration: 12)
         media.audioTrackCount = 2; media.audioRoles = roles
         media.shortFraming = ShortFraming(); media.shortFraming?.confirmed = true
@@ -48,8 +48,8 @@ extension EditorUITests {
         tapInPanel(app.buttons["setup.changeSound"])
         segment("setup.role.0", "My voice"); segment("setup.role.1", "Not used")
         assertLabel("setup.routes", "Moments are detected from Track 1. Clips play Track 1. Captions listen to Track 1.")
-        XCTAssertFalse(app.buttons["setup.continue"].isEnabled, "Branding is required")
-        edit(app.textFields["setup.branding"], "example.test/player")
+        XCTAssertFalse(app.buttons["setup.continue"].isEnabled, "A badge username is required")
+        edit(app.textFields["branding.kick"], "kick.com/player")
         edit(app.textFields["setup.presetName"], "Test layout")
         waitEnabled(app.buttons["setup.continue"]); app.buttons["setup.continue"].click()
 
@@ -74,7 +74,7 @@ extension EditorUITests {
         let clip = try EditProject.read(from: folder.appendingPathComponent("Editable projects/01 - Watch this play.cutline"))
         XCTAssertEqual(clip.shortHook, "Watch this play"); XCTAssertEqual(clip.workflow, .mobileShort)
         XCTAssertEqual(try ScenePresetStore.load(from: root).first?.name, "Test layout")
-        XCTAssertEqual(try CreatorProfileStore.load(from: root).text, "example.test/player")
+        XCTAssertEqual(try CreatorProfileStore.load(from: root).kick, "player")
         XCTAssertFalse(FileManager.default.fileExists(atPath: root.appendingPathComponent("request-log").path), "Clipping never calls a network service")
         XCTAssertTrue(FileManager.default.fileExists(atPath: root.appendingPathComponent("Recovery/clip-session.cutline").path), "Sessions autosave for Home")
 
@@ -89,7 +89,7 @@ extension EditorUITests {
     }
 
     func testRememberedLayoutSkipsSetup() throws {
-        try CreatorProfileStore.save(ShortBranding(text: "example.test/player"), to: root)
+        try CreatorProfileStore.save(ShortBranding(kick: "player"), to: root)
         let preset = ScenePreset(name: "Saved layout", framing: ShortFraming(), audioRoles: [.mic, .ignore], game: .cs2, motionRegion: AutoClipSettings().motionRegion)
         try ScenePresetStore.save([preset], to: root)
         launch(project: false, home: true)

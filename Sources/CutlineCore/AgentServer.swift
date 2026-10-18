@@ -13,7 +13,7 @@ public final class AgentServer: @unchecked Sendable {
     open_in_cutline shows a project in the app; while it is open there, every edit_project change appears live and the user can undo it.
     Long jobs hand back a job id after about 40 seconds; call wait_for_job until it finishes.
     Before exporting a short, the facecam/gameplay layout must be set (a saved layout from get_setup, or set_layout) and every clip needs a hook of 1–80 characters.
-    Ask the user before overwriting their files or changing their channel name.
+    Ask the user before overwriting their files or changing their usernames or badge.
     """
     let tools: AgentTools
     let send: @Sendable (JSON) -> Void

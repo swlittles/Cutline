@@ -73,14 +73,24 @@ final class OutputWorkflowTests: XCTestCase {
         let fitted = CutlineVideoCompositor.shortPanels(red, framing: framing, canvas: canvas)
         XCTAssertEqual(pixel(fitted, x: 1, y: 1), [0,0,0,255])
     }
-    func testMandatoryBrandContainsBlackStripGreenMarkAndWhiteAddress() {
-        let image = CutlineVideoCompositor().shortBrand(size: CGSize(width: 1080, height: 38), branding: ShortBranding(text: "example.test/player", logo: .kick))
-        XCTAssertEqual(pixel(image, x: 1, y: 20), [0,0,0,255])
-        var bytes = [UInt8](repeating: 0, count: 1080 * 38 * 4)
-        CIContext().render(image, toBitmap: &bytes, rowBytes: 1080 * 4, bounds: image.extent, format: .RGBA8, colorSpace: CGColorSpaceCreateDeviceRGB())
-        let pixels = stride(from: 0, to: bytes.count, by: 4)
-        XCTAssertGreaterThan(pixels.filter { bytes[$0+1] > 180 && bytes[$0] < 130 && bytes[$0+2] < 80 }.count, 100)
-        XCTAssertGreaterThan(pixels.filter { bytes[$0] > 200 && bytes[$0+1] > 200 && bytes[$0+2] > 200 }.count, 300)
+    func testBadgesUsePlatformColourDarkBodyAndWhiteHandle() throws {
+        for (branding, colour) in [(ShortBranding(kick: "player"), { (p: [UInt8]) in p[1] > 200 && p[0] < 130 && p[2] < 80 }),
+                                   (ShortBranding(twitch: "player", badge: .twitch), { (p: [UInt8]) in p[2] > 200 && p[0] > 110 && p[0] < 180 && p[1] < 110 })] {
+            let image = try XCTUnwrap(CutlineVideoCompositor().brandBadge(branding, canvas: CGSize(width: 1080, height: 1920)))
+            XCTAssertEqual(image.extent.height, 76)
+            let width = Int(image.extent.width)
+            var bytes = [UInt8](repeating: 0, count: width * 76 * 4)
+            CIContext().render(image, toBitmap: &bytes, rowBytes: width * 4, bounds: image.extent, format: .RGBA8, colorSpace: CGColorSpaceCreateDeviceRGB())
+            let pixels = stride(from: 0, to: bytes.count, by: 4).map { Array(bytes[$0..<$0+4]) }
+            XCTAssertGreaterThan(pixels.filter(colour).count, 1500, "border and logo in \(branding.badge.label) colour")
+            XCTAssertGreaterThan(pixels.filter { $0[0] < 12 && $0[1] < 12 && $0[2] < 12 && $0[3] == 255 }.count, 5000, "dark body")
+            XCTAssertGreaterThan(pixels.filter { $0[0] > 220 && $0[1] > 220 && $0[2] > 220 }.count, 300, "white handle")
+            XCTAssertEqual(pixels[0][3], 0, "rounded corners are transparent")
+        }
+        let large = try XCTUnwrap(CutlineVideoCompositor().brandBadge(ShortBranding(kick: "player", placement: BadgePlacement(size: 2)), canvas: CGSize(width: 1080, height: 1920)))
+        XCTAssertEqual(large.extent.height, 152)
+        let long = try XCTUnwrap(CutlineVideoCompositor().brandBadge(ShortBranding(kick: String(repeating: "w", count: 40), placement: BadgePlacement(size: 2.5)), canvas: CGSize(width: 1080, height: 1920)))
+        XCTAssertLessThanOrEqual(long.extent.width, 1080 * 0.94 + 1, "long names shrink to stay inside the frame")
     }
     func testEngineRefusesIncompleteShortBeforeCreatingOutput() async throws {
         var p = shortProject(); p.shortHook = ""
@@ -105,7 +115,7 @@ final class OutputWorkflowTests: XCTestCase {
         var p = shortProject(); p.clips[0].adjustments = ClipAdjustments(); p.clips[0].adjustments?.fadeIn = 2
         let root = try Fixtures.temporary(); defer { try? FileManager.default.removeItem(at: root) }
         let url = root.appendingPathComponent("branded.mp4")
-        let render = try await CompositionEngine.build(p, branding: ShortBranding(text: "example.test/player", logo: .kick)); try await CompositionEngine.export(render, to: url)
+        let render = try await CompositionEngine.build(p, branding: ShortBranding(kick: "player")); try await CompositionEngine.export(render, to: url)
         let generator = AVAssetImageGenerator(asset: AVURLAsset(url: url))
         let frame = try await generator.image(at: CMTime(seconds: 0.1, preferredTimescale: 600)).image
         XCTAssertEqual(frame.width, 720); XCTAssertEqual(frame.height, 1280)

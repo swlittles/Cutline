@@ -9,8 +9,7 @@ struct SetupStepView: View {
     @State private var roles: [AudioRole] = []
     @State private var rolesTouched = false
     @State private var game = ClipGame.generic
-    @State private var brandingText = ""
-    @State private var logo = ShortBranding.Logo.none
+    @State private var branding = ShortBranding()
     @State private var editBranding = false
     @State private var remember = true
     @State private var presetName = ""
@@ -50,7 +49,7 @@ struct SetupStepView: View {
                     }
                     VStack(alignment: .leading, spacing: 16) {
                         SectionLabel("Preview")
-                        ShortLayoutPreview(image: image, framing: framing, branding: brandingText, hook: "Your hook appears here").frame(width: 270)
+                        ShortLayoutPreview(image: image, framing: framing, branding: branding, hook: "Your hook appears here", placement: $branding.placement).frame(width: 270)
                         brandingCard
                         Card {
                             Toggle("Remember this layout for next time", isOn: $remember).font(.system(size: 12)).accessibilityIdentifier("setup.savePreset")
@@ -63,9 +62,8 @@ struct SetupStepView: View {
                 }.padding(32).frame(maxWidth: 1180).frame(maxWidth: .infinity)
             }.accessibilityIdentifier("setup.scroll")
             StepFooter(back: .importVOD, title: "Looks good – pick clips", enabled: store.clipMedia != nil && blocker == nil, hint: blocker, identifier: "setup.continue") {
-                let branding = editBranding || !store.brandingReady ? ShortBranding(text: brandingText, logo: logo) : nil
                 let name = presetName.trimmingCharacters(in: .whitespacesAndNewlines)
-                store.completeSetup(framing: framing, roles: roles, game: game, branding: branding, presetName: remember ? (name.isEmpty ? "My layout" : name) : nil)
+                store.completeSetup(framing: framing, roles: roles, game: game, branding: branding == store.creatorProfile ? nil : branding, presetName: remember ? (name.isEmpty ? "My layout" : name) : nil)
             }
         }
         .onAppear(perform: load)
@@ -82,7 +80,8 @@ struct SetupStepView: View {
     }
     private var blocker: String? {
         if !framing.camera.valid || !framing.gameplay.valid { return "Keep both boxes inside the picture." }
-        if (editBranding || !store.brandingReady) && brandingText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return "Add your channel name for the branding strip." }
+        if branding.displayText.isEmpty { return "Add your \(branding.badge.label) username for the channel badge." }
+        if let problem = (try? branding.validate()) == nil ? "Check your username: letters, numbers, dots, dashes and underscores." : nil { return problem }
         return nil
     }
     private var trackCount: Int { store.clipMedia?.audioTrackCount ?? 0 }
@@ -126,18 +125,18 @@ struct SetupStepView: View {
         }
     }
     private var brandingCard: some View {
-        Card(title: "Your channel") {
+        Card(title: "Your channel badge") {
             if store.brandingReady && !editBranding {
-                HStack {
-                    Text(store.creatorProfile.displayText).font(.system(size: 13, weight: .medium)).lineLimit(1)
+                HStack(spacing: 8) {
+                    PlatformLogo(platform: branding.badge)
+                    Text(branding.displayText).font(.system(size: 13, weight: .medium)).lineLimit(1).accessibilityIdentifier("setup.badgeSummary")
                     Spacer()
-                    Button("Change") { editBranding = true }.buttonStyle(.accentLink)
+                    Button("Change") { editBranding = true }.buttonStyle(.accentLink).accessibilityIdentifier("setup.changeBadge")
                 }
             } else {
-                TextField("e.g. kick.com/yourname", text: $brandingText).textFieldStyle(.roundedBorder).accessibilityIdentifier("setup.branding")
-                Picker("Logo", selection: $logo) { Text("Text only").tag(ShortBranding.Logo.none); Text("With Kick logo").tag(ShortBranding.Logo.kick) }.labelsHidden()
-                Text("Shown in a thin strip on every short. Saved only on this Mac.").font(.system(size: 11)).foregroundStyle(Studio.muted)
+                BrandingFields(branding: $branding)
             }
+            BadgeSizeControl(placement: $branding.placement)
         }
     }
     private func load() {
@@ -145,7 +144,7 @@ struct SetupStepView: View {
         framing = media.shortFraming ?? store.lastScenePreset?.framing ?? ShortFraming()
         roles = store.audioRoles; rolesTouched = media.audioRoles != nil
         game = store.clipSettings.game
-        brandingText = store.creatorProfile.text; logo = store.creatorProfile.logo; editBranding = false
+        branding = store.creatorProfile; editBranding = false
         presetName = store.lastScenePreset?.name ?? "My layout"
         time = min(media.duration - 0.1, max(0, media.duration * 0.2)); image = nil
     }

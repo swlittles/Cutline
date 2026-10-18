@@ -25,7 +25,7 @@ struct ExportStepView: View {
                            enabled: !busy && !store.isScanningClips && store.exportProblems.isEmpty && !kept.isEmpty,
                            hint: store.exportProblems.first, identifier: "clips.export", action: store.exportKeptClips)
             }
-        }.onAppear { brandingText = store.creatorProfile.text }
+        }.onAppear { brandingText = store.creatorProfile.username(for: store.creatorProfile.badge) }
     }
     private func done(_ output: URL) -> some View {
         VStack(spacing: 18) {
@@ -88,11 +88,16 @@ struct ExportStepView: View {
     @ViewBuilder private var sidebar: some View {
         VStack(alignment: .leading, spacing: 16) {
             Card(title: "Ready to go") {
-                check(store.brandingReady, store.brandingReady ? "Channel: \(store.creatorProfile.displayText)" : "Add your channel name")
+                check(store.brandingReady, store.brandingReady ? "\(store.creatorProfile.badge.label) badge: \(store.creatorProfile.displayText)" : "Add your \(store.creatorProfile.badge.label) username")
                 if !store.brandingReady {
                     HStack {
-                        TextField("e.g. kick.com/yourname", text: $brandingText).textFieldStyle(.roundedBorder).accessibilityIdentifier("export.branding")
-                        Button("Save") { do { try store.saveCreatorProfile(ShortBranding(text: brandingText, logo: store.creatorProfile.logo)) } catch { store.error = error.localizedDescription } }.buttonStyle(.secondary)
+                        PlatformLogo(platform: store.creatorProfile.badge)
+                        TextField("\(store.creatorProfile.badge.label) username", text: $brandingText).textFieldStyle(.roundedBorder).accessibilityIdentifier("export.branding")
+                        Button("Save") {
+                            var profile = store.creatorProfile
+                            if profile.badge == .kick { profile.kick = ShortBranding.username(brandingText) } else { profile.twitch = ShortBranding.username(brandingText) }
+                            do { try store.saveCreatorProfile(profile) } catch { store.error = error.localizedDescription }
+                        }.buttonStyle(.secondary)
                     }
                 }
                 check(store.clipMedia?.shortFraming?.confirmed == true, "Layout checked")
@@ -163,7 +168,7 @@ private struct ClipThumbnail: View {
     let hook: String
     @State private var image: NSImage?
     var body: some View {
-        ShortLayoutPreview(image: image, framing: store.clipMedia?.shortFraming ?? ShortFraming(), branding: store.creatorProfile.displayText, hook: hook)
+        ShortLayoutPreview(image: image, framing: store.clipMedia?.shortFraming ?? ShortFraming(), branding: store.creatorProfile, hook: hook)
             .task(id: at) { if let media = store.clipMedia { image = try? await loadSourceFrame(media, at: at, maximum: CGSize(width: 640, height: 360)) } }
     }
 }

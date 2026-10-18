@@ -12,6 +12,13 @@ A guided, four-step path from a stream recording to finished shorts, a simpler e
 - **Captions without setup.** Turn on captions and Cutline writes them for the kept clips when you export, using macOS on-device speech recognition. Whisper is used instead when it is installed with a model. Audio never leaves the Mac.
 - **Edit a clip without losing your picks.** **Edit this clip…** opens one moment in the editor; **Back to my clips** returns with every decision, hook and trim. Sessions autosave, and Home offers to continue after a relaunch.
 
+## Kick and Twitch channel badges
+
+- Shorts carry a **channel badge**: your platform's logo and @username in a rounded container, Kick green or Twitch purple.
+- Save your Kick and Twitch usernames in **Settings → Your channel** or the Layout step (pasting a channel address works), and choose which badge shorts show.
+- **Drag the badge** anywhere on the 9:16 preview and set its size. It starts centred on the strip between facecam and gameplay; previews and exports match exactly.
+- An existing "channel name" setting carries over to the matching platform's badge.
+
 ## Let an AI agent do the editing
 
 - **Claude Code and Codex can use Cutline.** Connect them in **Settings → AI agents** with one click (or a copied command). Then ask in plain words: "find the best moments in my stream and make five shorts", "trim the intro and add music", "add captions and export".
@@ -26,7 +33,7 @@ A guided, four-step path from a stream recording to finished shorts, a simpler e
 ## Mobile shorts
 
 - New projects default to **Short · 9:16**; **YouTube · 16:9** is an explicit Format choice.
-- Every short uses 30% facecam, a 2% black strip with locally configured branding and an optional Kick mark, and 68% gameplay. Each clip has a hook for its first three seconds; timeline clips can override the shared hook.
+- Every short uses 30% facecam, a 2% black divider, your Kick or Twitch channel badge, and 68% gameplay. Each clip has a hook for its first three seconds; timeline clips can override the shared hook.
 - Older projects keep their framing on open and require a format choice before export. Version-3 project files preserve hooks and crops and are rejected by older apps instead of silently losing the layout.
 - Creator branding has no personal defaults and is saved only on this Mac.
 

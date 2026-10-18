@@ -5,7 +5,7 @@ import CutlineCore
 extension EditorStoreTests {
     /// A confirmed, branded recording whose Track 1 carries the fixture's audio burst.
     func clipSeed(roles: [AudioRole] = [.mic, .ignore]) -> MediaItem {
-        try! store.saveCreatorProfile(ShortBranding(text: "example.test/player"))
+        try! store.saveCreatorProfile(ShortBranding(kick: "player"))
         var media = MediaItem(url: fixture.appendingPathComponent("autoclip.mp4"), duration: 12)
         media.audioTrackCount = 2; media.audioRoles = roles
         media.shortFraming = ShortFraming(); media.shortFraming?.confirmed = true
@@ -111,8 +111,8 @@ extension EditorStoreTests {
         XCTAssertFalse(store.completeSetup(framing: ShortFraming(), roles: [.mix, .mic], game: .generic, branding: nil, presetName: nil))
         XCTAssertNotNil(store.error); store.error = nil
         var framing = ShortFraming(); framing.camera.x = 0.7
-        XCTAssertTrue(store.completeSetup(framing: framing, roles: [.mix, .mic], game: .siege, branding: ShortBranding(text: "example.test/me"), presetName: "Siege cam"))
-        XCTAssertEqual(store.creatorProfile.text, "example.test/me")
+        XCTAssertTrue(store.completeSetup(framing: framing, roles: [.mix, .mic], game: .siege, branding: ShortBranding(kick: "me"), presetName: "Siege cam"))
+        XCTAssertEqual(store.creatorProfile.kick, "me")
         XCTAssertEqual(try ScenePresetStore.load(from: root).map(\.name), ["Siege cam"])
         XCTAssertEqual(store.lastScenePreset?.framing.camera.x, 0.7)
         // Applying the preset to the next recording confirms its crops and roles in one step.

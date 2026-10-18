@@ -102,9 +102,13 @@ public final class CutlineVideoCompositor: NSObject, AVVideoCompositing, @unchec
                     image = textImage.transformed(by: transform).composited(over: image)
                 }
                 if instruction.shortFraming != nil {
-                    // Applied last: transforms, fades, overlays and captions cannot hide the mandatory branding.
+                    // Applied after transforms, fades, overlays and captions so nothing hides the channel badge.
                     let geometry = ShortGeometry(size: canvas.size)
-                    image = shortBrand(size: geometry.brand.size, branding: instruction.branding).transformed(by: CGAffineTransform(translationX: 0, y: geometry.brand.minY)).composited(over: image)
+                    if let badge = brandBadge(instruction.branding, canvas: canvas.size) {
+                        // The placement is measured from the top-left; Core Image draws from the bottom-left.
+                        let rect = instruction.branding.placement.rect(badge: badge.extent.size, canvas: canvas.size)
+                        image = badge.transformed(by: CGAffineTransform(translationX: rect.minX, y: canvas.height - rect.maxY)).composited(over: image)
+                    }
                     if elapsed < min(3, instruction.timeRange.duration.seconds), !instruction.hook.isEmpty {
                         var style = CaptionStyle(); style.fontSize = 54; style.colorHex = "FFDF00"; style.background = true
                         if let bitmap = captionImage(instruction.hook, style: style, canvas: canvas.size) {
@@ -184,33 +188,11 @@ public final class CutlineVideoCompositor: NSObject, AVVideoCompositing, @unchec
         let camera = place(crop(framing.camera), in: geometry.camera, fill: true)
         return camera.composited(over: gameplay.composited(over: background))
     }
-    func shortBrand(size: CGSize, branding: ShortBranding) -> CIImage {
-        let key = "brand-\(size)-\(branding.logo.rawValue)-\(branding.displayText)" as NSString
+    func brandBadge(_ branding: ShortBranding, canvas: CGSize) -> CIImage? {
+        let key = "badge-\(canvas)-\(branding.badge.rawValue)-\(branding.placement.size)-\(branding.displayText)" as NSString
         if let cached = bitmapCache.object(forKey: key) { return CIImage(cgImage: cached.image) }
-        let width = Int(size.width), height = Int(size.height)
-        guard let cg = CGContext(data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0, space: colorSpace, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return CIImage(color: .black).cropped(to: CGRect(origin: .zero, size: size)) }
-        cg.setFillColor(CGColor(gray: 0, alpha: 1)); cg.fill(CGRect(origin: .zero, size: size))
-        let logoSize = branding.logo == .kick ? size.height * 0.74 : 0
-        let gap = logoSize > 0 ? size.height * 0.25 : 0
-        let font = NSFont.systemFont(ofSize: size.height * 0.70, weight: .bold)
-        let attributes: [NSAttributedString.Key: Any] = [.font: font, .foregroundColor: NSColor.white]
-        let raw = CTLineCreateWithAttributedString(NSAttributedString(string: branding.displayText, attributes: attributes))
-        let available = max(1, size.width * 0.92 - logoSize - gap)
-        let scale = min(1, available / max(1, CTLineGetTypographicBounds(raw, nil, nil, nil)))
-        let line = CTLineCreateWithAttributedString(NSAttributedString(string: branding.displayText, attributes: [.font: NSFont.systemFont(ofSize: font.pointSize * scale, weight: .bold), .foregroundColor: NSColor.white]))
-        var ascent: CGFloat = 0, descent: CGFloat = 0
-        let textWidth = CTLineGetTypographicBounds(line, &ascent, &descent, nil)
-        let left = (size.width - textWidth - gap - logoSize) / 2
-        // Optional platform mark; the creator supplies the accompanying text locally.
-        let points: [(CGFloat, CGFloat)] = [(1.333,0),(9.333,0),(9.333,5.333),(12,5.333),(12,2.667),(14.667,2.667),(14.667,0),(22.667,0),(22.667,8),(20,8),(20,10.667),(17.333,10.667),(17.333,13.333),(20,13.333),(20,16),(22.667,16),(22.667,24),(14.667,24),(14.667,21.333),(12,21.333),(12,18.667),(9.333,18.667),(9.333,24),(1.333,24)]
-        if branding.logo == .kick {
-            cg.saveGState(); cg.translateBy(x: left, y: (size.height + logoSize)/2); cg.scaleBy(x: logoSize/24, y: -logoSize/24)
-            cg.setFillColor(CGColor(red: 83/255, green: 252/255, blue: 24/255, alpha: 1))
-            cg.move(to: CGPoint(x: points[0].0, y: points[0].1)); for p in points.dropFirst() { cg.addLine(to: CGPoint(x: p.0, y: p.1)) }; cg.closePath(); cg.fillPath(); cg.restoreGState()
-        }
-        cg.textPosition = CGPoint(x: left + logoSize + gap, y: (size.height - ascent - descent)/2 + descent); CTLineDraw(line, cg)
-        guard let bitmap = cg.makeImage() else { return CIImage(color: .black).cropped(to: CGRect(origin: .zero, size: size)) }
-        bitmapCache.setObject(CaptionBitmap(bitmap), forKey: key, cost: width * height * 4)
+        guard let bitmap = BrandBadge.image(branding, height: BrandBadge.height(for: branding, canvas: canvas), maxWidth: canvas.width * 0.94) else { return nil }
+        bitmapCache.setObject(CaptionBitmap(bitmap), forKey: key, cost: bitmap.width * bitmap.height * 4)
         return CIImage(cgImage: bitmap)
     }
 

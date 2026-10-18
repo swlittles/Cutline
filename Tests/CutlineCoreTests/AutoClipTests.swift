@@ -163,7 +163,7 @@ final class AutoClipTests: XCTestCase {
         let c = AutoClipCandidate(id: "one", start: 4, end: 8, score: 20, evidence: [event(5)])
         let report = AutoClipReport(media: media, settings: AutoClipSettings(), candidates: [c], evidence: c.evidence)
         var options = ProjectSettings(); options.resolution = 720
-        let output = try await AutoClipBatch.export(report: report, candidates: [c], to: root, name: "Friday stream shorts", options: options, hooks: [c.id: "Watch this play"], branding: ShortBranding(text: "example.test/player"))
+        let output = try await AutoClipBatch.export(report: report, candidates: [c], to: root, name: "Friday stream shorts", options: options, hooks: [c.id: "Watch this play"], branding: ShortBranding(kick: "player"))
         XCTAssertEqual(output.lastPathComponent, "Friday stream shorts")
         let files = try FileManager.default.contentsOfDirectory(at: output, includingPropertiesForKeys: nil)
         XCTAssertEqual(files.map(\.lastPathComponent).sorted(), ["01 - Watch this play.mp4", AutoClipBatch.projectsFolder], "Only the shorts sit at the top level")
@@ -175,7 +175,7 @@ final class AutoClipTests: XCTestCase {
         XCTAssertEqual(try JSONDecoder().decode(AutoClipReport.self, from: Data(contentsOf: projects.appendingPathComponent("analysis.json"))), report)
         XCTAssertFalse(try FileManager.default.contentsOfDirectory(atPath: root.path).contains { $0.hasPrefix(".cutline") })
         // A second export never overwrites the first.
-        let again = try await AutoClipBatch.export(report: report, candidates: [c], to: root, name: "Friday stream shorts", options: options, hooks: [c.id: "Watch this play"], branding: ShortBranding(text: "example.test/player"))
+        let again = try await AutoClipBatch.export(report: report, candidates: [c], to: root, name: "Friday stream shorts", options: options, hooks: [c.id: "Watch this play"], branding: ShortBranding(kick: "player"))
         XCTAssertEqual(again.lastPathComponent, "Friday stream shorts 2")
     }
     func testCancelledBatchLeavesNoPartialFolder() async throws {

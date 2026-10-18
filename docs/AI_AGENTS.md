@@ -23,7 +23,7 @@ Then ask in plain words, for example:
 
 | Tool | What it does |
 | --- | --- |
-| `get_setup` | Saved facecam layouts, channel name, caption and MKV readiness, output folder. |
+| `get_setup` | Saved facecam layouts, the channel badge (Kick/Twitch usernames, which logo, placement), caption and MKV readiness, output folder. |
 | `inspect_video` | Length, size, frame rate, audio tracks. OBS MKV/FLV/TS are copied to an MP4 beside the original without re-encoding. |
 | `view_frame` | Images of a recording, or of a project as rendered (layout, hook, captions, branding), so the agent checks its work. |
 | `find_moments` | The same highlight scan as **Clip a Stream**, with hook ideas. Rescans of a file are instant. |
@@ -32,14 +32,14 @@ Then ask in plain words, for example:
 | `transcribe` | Captions from speech with Whisper, when installed. Agents can also write captions directly. |
 | `export_video` | An MP4 of a project. Never overwrites a source or an existing file unless told to. |
 | `open_in_cutline` | Shows a project in the app. |
-| `set_channel_name` | The channel name drawn on shorts. Agents are told to ask first. |
+| `set_branding` | Kick and Twitch usernames, which badge shorts carry, and its position and size. Agents are told to ask first. |
 | `wait_for_job`, `cancel_job` | Long scans and exports hand back a job id after about 40 seconds, inside agents' tool timeouts. |
 
 ## Working together
 
 - A project open in Cutline follows the agent's edits as they're saved. The status line says **Updated by an AI agent**, and **⌘Z** takes each change back. If you have unsaved changes when the agent edits, Cutline asks which to keep.
 - Simultaneous edits to one project apply in order; none is lost.
-- Settings are shared with the app: saved layouts, the channel name, the scan cache and the export folder.
+- Settings are shared with the app: saved layouts, the channel badge, the scan cache and the export folder.
 - Everything stays local. The connector makes no network requests; the agent itself talks to its own provider, and sees what tools return (file paths, timings, captions and the frames it asks for).
 
 ## Limits

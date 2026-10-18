@@ -1,6 +1,6 @@
 # Local automatic clipping
 
-**Output:** every automatic clip is a [Mobile Short](OUTPUT_WORKFLOWS.md): 9:16 with 30% facecam, 2% mandatory black branding strip (configured locally in Settings), and 68% gameplay. Every kept clip needs a hook (Keep fills in the suggested hook when the field is empty), and the recording's crops are confirmed in the **Layout** step. No additional AI service is used.
+**Output:** every automatic clip is a [Mobile Short](OUTPUT_WORKFLOWS.md): 9:16 with 30% facecam, a 2% black divider, a mandatory Kick or Twitch channel badge (configured locally in Settings), and 68% gameplay. Every kept clip needs a hook (Keep fills in the suggested hook when the field is empty), and the recording's crops are confirmed in the **Layout** step. No additional AI service is used.
 
 Start from **Home → Clip a stream** (or **Find moments for shorts** on a recording in the editor's media library). Choosing a recording starts measuring it at once. The scan does not require a timeline, captions, an OpenRouter key, or a network connection. It analyzes the source recording rather than the edited timeline.
 
@@ -20,7 +20,7 @@ The initial roles are a guess from track titles written by the recorder, falling
 
 ## Review and export
 
-**Review** plays each moment through the real compositor, with framing, branding strip, hook and captions. Keep (**K**; an empty hook gets the suggested one), skip (**X**), undo (**⌘Z**), and change lead-in/payoff with **[ ]** or the trim handles (1 s minimum, 180 s maximum). Decisions, trims, hooks and hand-marked moments are stored in the project under `clipReview`, so a saved session reopens where it stopped. **Why this moment?** lists the evidence.
+**Review** plays each moment through the real compositor, with framing, channel badge, hook and captions. Keep (**K**; an empty hook gets the suggested one), skip (**X**), undo (**⌘Z**), and change lead-in/payoff with **[ ]** or the trim handles (1 s minimum, 180 s maximum). Decisions, trims, hooks and hand-marked moments are stored in the project under `clipReview`, so a saved session reopens where it stopped. **Why this moment?** lists the evidence.
 
 **Export** makes a new folder, `<recording> shorts` in the chosen export folder (default `~/Movies/Cutline`), with one MP4 per kept clip (named after its hook) and an **Editable projects** subfolder holding each `.cutline` project plus `analysis.json` with the scan settings, measurements, source timestamps and selection evidence. Exports use the current resolution/frame-rate settings. Optional captions transcribe **only the kept ranges** on this Mac, with Whisper when it is installed with a model and macOS on-device speech recognition otherwise. Export writes any missing captions automatically; **Preview captions now** writes them first so you can fix the wording; trimming a clip afterwards discards its captions so they never drift. Editable projects reference the original recording, so retain that file. Cancellation or failure removes the unfinished batch; existing files are never overwritten.
 

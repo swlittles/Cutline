@@ -190,28 +190,29 @@ struct RegionEditor: View {
 struct ShortLayoutPreview: View {
     let image: NSImage?
     let framing: ShortFraming
-    let branding: String
+    let branding: ShortBranding
     var hook: String?
+    /// When set, the channel badge can be dragged into place.
+    var placement: Binding<BadgePlacement>?
     var body: some View {
         GeometryReader { geometry in
             let width = geometry.size.width, height = width * 16 / 9
             VStack(spacing: 0) {
                 panel(framing.camera, fill: true).frame(width: width, height: height * 0.30).clipped()
-                ZStack {
-                    Color.black
-                    Text(branding.isEmpty ? "Your channel" : branding).font(.system(size: max(6, height * 0.013), weight: .semibold)).foregroundStyle(branding.isEmpty ? Studio.warning : .white).lineLimit(1)
-                }.frame(width: width, height: height * 0.02)
+                Color.black.frame(width: width, height: height * 0.02)
                 panel(framing.gameplay, fill: !framing.containGameplay).frame(width: width, height: height * 0.68).clipped().background(Color.black)
             }
+            // As in exports, the hook draws over the badge.
+            .overlay { PreviewBadge(branding: branding, canvas: CGSize(width: width, height: height), placement: placement) }
             .overlay(alignment: .top) {
                 if let hook, !hook.isEmpty {
                     Text(hook).font(.system(size: max(8, height * 0.028), weight: .heavy)).multilineTextAlignment(.center).foregroundStyle(.white)
                         .padding(.horizontal, 8).padding(.vertical, 4).background(.black.opacity(0.6), in: RoundedRectangle(cornerRadius: 4))
-                        .padding(.top, height * 0.34).padding(.horizontal, 10)
+                        .padding(.top, height * 0.34).padding(.horizontal, 10).allowsHitTesting(false)
                 }
             }
             .frame(width: width, height: height)
-        }.aspectRatio(9 / 16, contentMode: .fit).clipShape(RoundedRectangle(cornerRadius: 12)).overlay(RoundedRectangle(cornerRadius: 12).stroke(Studio.line)).shadow(color: .black.opacity(0.15), radius: 10, y: 4)
+        }.aspectRatio(9 / 16, contentMode: .fit).clipShape(RoundedRectangle(cornerRadius: 12)).overlay(RoundedRectangle(cornerRadius: 12).stroke(Studio.line).allowsHitTesting(false)).shadow(color: .black.opacity(0.15), radius: 10, y: 4)
     }
     @ViewBuilder private func panel(_ region: ClipScanRegion, fill: Bool) -> some View {
         if let cg = image?.cgImage(forProposedRect: nil, context: nil, hints: nil), region.valid,

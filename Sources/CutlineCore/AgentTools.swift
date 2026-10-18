@@ -61,7 +61,7 @@ public final class AgentTools: @unchecked Sendable {
     }
     static let specs: [Spec] = [
         Spec(name: "get_setup", title: "Check Cutline setup",
-             description: "Start here. Lists saved facecam layouts, the channel name shown on shorts, whether captions and MKV conversion are available, and the default output folder.",
+             description: "Start here. Lists saved facecam layouts, the channel badge on shorts (Kick/Twitch usernames, which logo, placement), whether captions and MKV conversion are available, and the default output folder.",
              properties: [:], required: [], readOnly: true, idempotent: true),
         Spec(name: "inspect_video", title: "Inspect a video",
              description: "Length, size, frame rate and audio tracks of a video file. OBS MKV/FLV/TS recordings are copied to an MP4 beside the original (no quality loss) and that path is returned; use it from then on.",
@@ -78,7 +78,7 @@ public final class AgentTools: @unchecked Sendable {
                           "sensitivity": number("0 = fewer, stronger moments; 1 = more, looser. Default 0.5."), "max_moments": number("1–100. Default 20."),
                           "audio_track": number("Audio track to listen to for reactions (1 = first). Usually the mic.")], required: ["video_path"], idempotent: true),
         Spec(name: "export_shorts", title: "Export shorts from a stream",
-             description: "Turns moments of one recording into finished vertical shorts (9:16: facecam on top, gameplay below, hook text for the first 3 seconds, channel name). Saves MP4s plus editable .cutline projects in a new folder. Needs a layout (saved layout name, or facecam and gameplay boxes) and the channel name from get_setup.",
+             description: "Turns moments of one recording into finished vertical shorts (9:16: facecam on top, gameplay below, hook text for the first 3 seconds, channel badge). Saves MP4s plus editable .cutline projects in a new folder. Needs a layout (saved layout name, or facecam and gameplay boxes) and the channel badge username from get_setup.",
              properties: ["video_path": string("The stream recording."),
                           "moments": ["type": "array", "description": "1–100 moments.", "items": ["type": "object", "properties": ["start": ["type": "number"], "end": ["type": "number"], "hook": ["type": "string", "description": "1–80 characters, one line."]], "required": ["start", "end", "hook"]]],
                           "layout": string("Saved layout name from get_setup."), "facecam": region("Facecam area of the recording."), "gameplay": region("Gameplay area of the recording."),
@@ -119,9 +119,12 @@ public final class AgentTools: @unchecked Sendable {
         Spec(name: "open_in_cutline", title: "Show in Cutline",
              description: "Opens a .cutline project in the Cutline app so the user can watch, tweak and export it. While it is open, edit_project changes appear there live.",
              properties: ["path": string("A .cutline project.")], required: ["path"], idempotent: true),
-        Spec(name: "set_channel_name", title: "Set the channel name",
-             description: "Sets the channel name drawn on every short (for example kick.com/name). It is the user's setting: only change it when they ask or agree.",
-             properties: ["text": string("1–80 characters on one line."), "kick_logo": bool("Show the Kick logo beside it.")], required: ["text"], destructive: true, idempotent: true),
+        Spec(name: "set_branding", title: "Set the channel badge",
+             description: "Sets the creator's Kick and Twitch usernames and the badge drawn on every short: a Kick or Twitch logo container with @username. Place it with x and y (its centre as fractions of the 9:16 frame from the top-left; default centred on the strip between facecam and gameplay, x 0.5, y 0.31) and size (1 = standard, 0.5–2.5). These are the user's settings: only change them when they ask or agree. Check placement with view_frame on a short project.",
+             properties: ["kick": string("Kick username (a channel address is fine)."), "twitch": string("Twitch username."),
+                          "badge": ["type": "string", "enum": ["kick", "twitch"], "description": "Which logo container shorts show."],
+                          "x": number("Badge centre across the frame, 0–1."), "y": number("Badge centre down the frame, 0–1."), "size": number("0.5–2.5; 1 is standard.")],
+             required: [], destructive: true, idempotent: true),
         Spec(name: "wait_for_job", title: "Wait for a job",
              description: "Waits up to about 40 seconds for a long job (scan, export, captions) and returns its result, or its progress if it is still running.",
              properties: ["job_id": string("The id a tool returned.")], required: ["job_id"], readOnly: true),
@@ -167,11 +170,20 @@ public final class AgentTools: @unchecked Sendable {
             _ = try EditProject.read(from: url)
             try openInApp(url)
             return AgentToolResult(text: "Opened \(url.lastPathComponent) in Cutline. Changes made with edit_project now appear there as they happen.")
-        case "set_channel_name":
-            let branding = ShortBranding(text: try a.string("text").trimmingCharacters(in: .whitespacesAndNewlines), logo: a.bool("kick_logo", default: false) ? .kick : .none)
+        case "set_branding":
+            var branding = self.branding()
+            if let name = try a.optionalString("kick") { branding.kick = ShortBranding.username(name) }
+            if let name = try a.optionalString("twitch") { branding.twitch = ShortBranding.username(name) }
+            if let value = try a.optionalString("badge") {
+                guard let platform = ShortBranding.Platform(rawValue: value.lowercased()) else { throw EditError.invalid("badge is kick or twitch.") }
+                branding.badge = platform
+            }
+            if a.raw["x"] != nil { branding.placement.x = try a.number("x", in: 0...1) }
+            if a.raw["y"] != nil { branding.placement.y = try a.number("y", in: 0...1) }
+            if a.raw["size"] != nil { branding.placement.size = try a.number("size", in: BadgePlacement.sizes) }
             try branding.validate()
             try CreatorProfileStore.save(branding, to: support)
-            return AgentToolResult(text: "Shorts now show “\(branding.displayText)”\(branding.logo == .kick ? " with the Kick logo" : "").")
+            return AgentToolResult(Self.json(branding))
         case "wait_for_job":
             guard let job = jobs.job(try a.string("job_id")) else { throw EditError.invalid("There’s no job with that id. Jobs are kept until Cutline’s connector restarts.") }
             return try await jobs.wait(job, seconds: handoffSeconds, progress: progress)
@@ -197,8 +209,7 @@ public final class AgentTools: @unchecked Sendable {
         let model = WhisperModel.allCases.first { $0.installed }
         return [
             "app": .string("Cutline \(appVersion)"),
-            "channel_name": profile.displayText.isEmpty ? .null : .string(profile.displayText),
-            "kick_logo": .bool(profile.logo == .kick),
+            "branding": Self.json(profile),
             "saved_layouts": .array(presets().map { preset in
                 ["name": .string(preset.name), "game": .string(preset.game.rawValue), "facecam": Self.json(preset.framing.camera), "gameplay": Self.json(preset.framing.gameplay),
                  "audio_tracks": .array(preset.audioRoles.enumerated().map { ["track": JSON($0.offset + 1), "role": .string($0.element.label)] })]
@@ -207,7 +218,7 @@ public final class AgentTools: @unchecked Sendable {
             "mkv_conversion": .string(LocalTools.executable("ffmpeg") != nil ? "Ready." : "Needs FFmpeg. Otherwise remux to MP4 in OBS (File → Remux Recordings)."),
             "output_folder": .string(exportRoot.path),
             "games": .array(ClipGame.allCases.map { .string($0.rawValue) }),
-            "notes": .array(profile.displayText.isEmpty ? ["Shorts need a channel name before export. Ask the user what to show, then call set_channel_name."] : [])
+            "notes": .array(profile.displayText.isEmpty ? [.string("Shorts need the user\u{2019}s \(profile.badge.label) username for the channel badge. Ask them, then call set_branding.")] : [])
         ]
     }
 
@@ -388,7 +399,7 @@ public final class AgentTools: @unchecked Sendable {
             hooks[id] = hook
         }
         let profile = branding()
-        do { try profile.validate() } catch { throw EditError.invalid("Shorts show the channel name, which isn’t set. Ask the user what to show, then call set_channel_name.") }
+        do { try profile.validate() } catch { throw EditError.invalid("Shorts show a channel badge with the user’s \(profile.badge.label) username, which isn’t set. Ask them for it, then call set_branding.") }
         var options = ProjectSettings()
         if a.raw["quality"] != nil {
             options.resolution = Int(try a.number("quality"))
@@ -527,7 +538,7 @@ public final class AgentTools: @unchecked Sendable {
         try project.validateForExport()
         let profile = branding()
         if project.workflow == .mobileShort {
-            do { try profile.validate() } catch { throw EditError.invalid("Shorts show the channel name, which isn’t set. Ask the user what to show, then call set_channel_name.") }
+            do { try profile.validate() } catch { throw EditError.invalid("Shorts show a channel badge with the user’s \(profile.badge.label) username, which isn’t set. Ask them for it, then call set_branding.") }
         }
         var output: URL
         if let path = try a.optionalString("output_path") {
@@ -561,7 +572,7 @@ public final class AgentTools: @unchecked Sendable {
         var problems: [String] = []
         if project.clips.isEmpty { problems.append("The timeline is empty.") }
         do { try project.validateForExport() } catch { problems.append(error.localizedDescription) }
-        if project.workflow == .mobileShort, branding().displayText.isEmpty { problems.append("Shorts need a channel name: ask the user, then call set_channel_name.") }
+        if project.workflow == .mobileShort, branding().displayText.isEmpty { problems.append("Shorts need the user’s username for the channel badge: ask them, then call set_branding.") }
         var cursor = 0.0
         let clips: [JSON] = project.clips.enumerated().map { index, clip in
             defer { cursor += clip.duration }
@@ -600,6 +611,11 @@ public final class AgentTools: @unchecked Sendable {
         return .object(result)
     }
 
+    static func json(_ branding: ShortBranding) -> JSON {
+        ["kick": branding.kick.isEmpty ? .null : .string(branding.kick), "twitch": branding.twitch.isEmpty ? .null : .string(branding.twitch),
+         "badge": .string(branding.badge.rawValue), "shows": branding.displayText.isEmpty ? .null : .string(branding.displayText),
+         "placement": ["x": round(branding.placement.x), "y": round(branding.placement.y), "size": round(branding.placement.size)]]
+    }
     static func round(_ value: Double) -> JSON { JSON((value * 100).rounded() / 100) }
     static func decimal(_ value: Double) -> String { String(format: "%.2f", value) }
     static func json(_ region: ClipScanRegion) -> JSON {

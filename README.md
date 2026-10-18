@@ -26,7 +26,7 @@ The build selects `/Applications/Xcode.app` when available and targets the build
 Cutline opens on **Home**. **Clip a stream** (⇧⌘N) has four steps:
 
 1. **Video:** drop or choose one recording. MP4, MOV and OBS's default MKV all work. MKV/FLV/TS files are copied into an MP4 beside the original, with no re-encoding and every audio track kept. If an MP4 with the same name already exists (for example from OBS's own remux), Cutline uses it. Without `ffmpeg`, Cutline explains how to remux in OBS instead. Finding moments starts immediately in the background. If you saved a layout, **Use my saved layout** skips step 2.
-2. **Layout:** drag the facecam and gameplay boxes on a real frame and watch the live 9:16 preview. Enter your channel name the first time. Sound and game have sensible defaults and stay folded. **Change** under Sound shows each OBS track with a loudness graph, an eight-second listen and a plain-language role (Everything / My voice / Game / Not used). **Remember this layout** is on by default.
+2. **Layout:** drag the facecam and gameplay boxes on a real frame and watch the live 9:16 preview. Enter your Kick or Twitch username the first time, then drag the channel badge where you want it and set its size. Sound and game have sensible defaults and stay folded. **Change** under Sound shows each OBS track with a loudness graph, an eight-second listen and a plain-language role (Everything / My voice / Game / Not used). **Remember this layout** is on by default.
 3. **Pick clips:** moments fill in as they are found. Each one plays as the finished short. **Keep** always works: if the hook is empty, Cutline uses the suggested hook (shown as the placeholder) in the same undo step. **Skip** passes. **Start/End −1s/+1s** buttons and drag handles trim. **Fewer ↔ More** changes how many moments appear instantly. **Add a moment** opens a scrubber for plays you remember. Detection settings (signals, thresholds, motion/HUD areas, OCR) live behind the sliders button. Keyboard shortcuts are listed under **Keyboard shortcuts**.
 4. **Export:** one button. Shorts go to `~/Movies/Cutline/<recording> shorts/` (change the folder once and it is remembered). MP4s sit at the top of that folder. Editable `.cutline` projects and `analysis.json` go in **Editable projects**. With **Add captions** on, Cutline writes captions for the kept clips before exporting, so there is nothing extra to click.
 
@@ -47,6 +47,10 @@ Choose **Edit a video** on Home. The editor opens in **Simple** mode: Media and 
 5. In Advanced, **Source audio tracks** on a selected clip controls each embedded OBS track. If the source contains a combined mix alongside separate microphone/game tracks, mute the redundant tracks to avoid doubled audio.
 6. In Advanced, **Layers** adds timed video overlays, music, and local text-to-speech voiceovers. Overlay/audio layers use absolute timeline positions; ordinary clip trim/reorder does not automatically relink them. Transcript cuts and AI keep-range edits do rebase all layers together.
 7. **⌘S** saves an editable `.cutline` project. **⌘E** exports an MP4 snapshot, with progress/cancellation. Export uses a temporary sibling file and rejects source-media destinations.
+
+## Channel badge
+
+Every short carries a badge with your platform's logo and @username: Kick (green) or Twitch (purple), in a rounded container. Save both usernames in **Settings → Your channel** (a pasted channel address works), choose which badge shorts show, drag it anywhere on the 9:16 preview and set its size. It starts centred on the strip between facecam and gameplay. The badge is a setting on this Mac, never saved in project files.
 
 ## Appearance
 

@@ -27,7 +27,8 @@ struct InspectorView: View {
                         Button { showFraming = true } label: { Label("Facecam layout…", systemImage: "rectangle.split.1x2").lineLimit(1) }
                             .buttonStyle(.secondary).help("Where the facecam and gameplay sit in the short").accessibilityIdentifier("short.framing").disabled(store.project.media.isEmpty)
                         HStack(spacing: 6) {
-                            Text(store.brandingReady ? "Channel: \(store.creatorProfile.displayText)" : "Add your channel name").font(.system(size: 11))
+                            if store.brandingReady { PlatformLogo(platform: store.creatorProfile.badge, size: 11) }
+                            Text(store.brandingReady ? store.creatorProfile.displayText : "Add your channel username").font(.system(size: 11))
                                 .foregroundStyle(store.brandingReady ? Studio.muted : Studio.warning).lineLimit(1)
                             Spacer()
                             SettingsLink { Text(store.brandingReady ? "Change" : "Add") }.buttonStyle(.accentLink)
