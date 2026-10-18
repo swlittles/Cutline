@@ -20,18 +20,23 @@ trap 'if [ -d "$STAGING/previous.app" ] && [ ! -e "$DESTINATION" ]; then mv "$ST
 APP="$STAGING/$APP_NAME.app"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources" "$APP/Contents/Frameworks"
 if [ "${CUTLINE_UNIVERSAL:-0}" = 1 ]; then
-  for arch in arm64 x86_64; do swift build -c release --product Cutline --triple "$arch-apple-macosx14.0" --scratch-path ".build/distribution-$arch"; done
+  for arch in arm64 x86_64; do
+    for product in Cutline cutline-mcp; do swift build -c release --product "$product" --triple "$arch-apple-macosx14.0" --scratch-path ".build/distribution-$arch"; done
+  done
   BIN=$(swift build -c release --triple arm64-apple-macosx14.0 --scratch-path .build/distribution-arm64 --show-bin-path)
   INTEL_BIN=$(swift build -c release --triple x86_64-apple-macosx14.0 --scratch-path .build/distribution-x86_64 --show-bin-path)
-  lipo -create "$BIN/Cutline" "$INTEL_BIN/Cutline" -output "$APP/Contents/MacOS/Cutline"
-  lipo "$APP/Contents/MacOS/Cutline" -verify_arch arm64 x86_64
+  for product in Cutline cutline-mcp; do
+    lipo -create "$BIN/$product" "$INTEL_BIN/$product" -output "$APP/Contents/MacOS/$product"
+    lipo "$APP/Contents/MacOS/$product" -verify_arch arm64 x86_64
+  done
 else
   swift build -c release --product Cutline
+  swift build -c release --product cutline-mcp
   BIN=$(swift build -c release --show-bin-path)
-  cp "$BIN/Cutline" "$APP/Contents/MacOS/Cutline"
+  cp "$BIN/Cutline" "$BIN/cutline-mcp" "$APP/Contents/MacOS/"
 fi
 # Keep debug paths in local build outputs, out of signed distributables.
-xcrun strip -S "$APP/Contents/MacOS/Cutline"
+xcrun strip -S "$APP/Contents/MacOS/Cutline" "$APP/Contents/MacOS/cutline-mcp"
 ditto "$BIN/Sparkle.framework" "$APP/Contents/Frameworks/Sparkle.framework"
 FRAMEWORK="$APP/Contents/Frameworks/Sparkle.framework"
 SIGN_ARGS=(--force --sign "$IDENTITY")
@@ -48,6 +53,8 @@ if [ -n "${CUTLINE_HELPERS_DIR:-}" ]; then
     fi
   done
 fi
+# The agent connector (Model Context Protocol server) that Claude Code and Codex launch.
+codesign "${SIGN_ARGS[@]}" --identifier "$BUNDLE_ID.mcp" "$APP/Contents/MacOS/cutline-mcp"
 python3 scripts/make-plist.py "$APP/Contents/Info.plist" "$APP_NAME" "$BUNDLE_ID" "$VERSION" "$BUILD_NUMBER" "${CUTLINE_RELEASE_CHANNEL:-stable}"
 cp Config/AppIcon.icns LICENSE docs/THIRD_PARTY_NOTICES.txt docs/Sparkle-LICENSE.txt "$APP/Contents/Resources/"
 codesign "${SIGN_ARGS[@]}" "$APP"

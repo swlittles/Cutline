@@ -52,6 +52,21 @@ targets:
     dependencies:
       - target: CutlineCore
       - package: Sparkle
+      - target: CutlineMCP
+        embed: true
+        codeSign: false
+        copy:
+          destination: executables
+  CutlineMCP:
+    type: tool
+    platform: macOS
+    sources: [Sources/CutlineMCP]
+    settings:
+      PRODUCT_NAME: cutline-mcp
+      LD_RUNPATH_SEARCH_PATHS: '@executable_path/../Frameworks'
+    dependencies:
+      - target: CutlineCore
+        embed: false
   CutlineCoreTests:
     type: bundle.unit-test
     platform: macOS

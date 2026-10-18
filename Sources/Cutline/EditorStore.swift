@@ -80,7 +80,11 @@ final class EditorStore: ObservableObject {
     @Published var isExporting = false
     @Published var error: String?
     @Published var status = "Your next highlight starts here."
-    @Published var projectURL: URL?
+    @Published var projectURL: URL? { didSet { if projectURL != oldValue { projectFileDate = projectURL.flatMap(Self.modificationDate) } } }
+    /// When the open project file last changed on disk, to notice edits made by agents.
+    var projectFileDate: Date?
+    var isOfferingReload = false
+    private var projectWatch: Timer?
     @Published var savedProject = EditProject(workflow: .mobileShort)
     @Published var undoStack: [EditProject] = []
     @Published var redoStack: [EditProject] = []
@@ -101,6 +105,10 @@ final class EditorStore: ObservableObject {
         do { scenePresets = try ScenePresetStore.load() } catch { self.error = error.localizedDescription }
         if LocalTools.testingRoot != nil { exportFolder = Self.defaultExportFolder }
         refreshRecoverableSession()
+        projectWatch = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] timer in
+            guard let self else { timer.invalidate(); return }
+            Task { @MainActor in self.followProjectFile() }
+        }
         player.actionAtItemEnd = .pause
         reviewPlayer.actionAtItemEnd = .pause
         installReviewKeys()
@@ -315,7 +323,7 @@ final class EditorStore: ObservableObject {
         do {
             var snapshot = project; snapshot.name = url.deletingPathExtension().lastPathComponent
             try snapshot.write(to: url)
-            project = snapshot; projectURL = url; savedProject = snapshot
+            project = snapshot; projectURL = url; savedProject = snapshot; projectFileDate = Self.modificationDate(url)
             NSDocumentController.shared.noteNewRecentDocumentURL(url)
             autosaveTask?.cancel()
             try? FileManager.default.removeItem(at: recoveryURL)
@@ -335,7 +343,7 @@ final class EditorStore: ObservableObject {
         do {
             let loaded = try EditProject.read(from: url)
             resetJobs()
-            project = loaded; savedProject = loaded; projectURL = url; parkedSession = nil
+            project = loaded; savedProject = loaded; projectURL = url; parkedSession = nil; projectFileDate = Self.modificationDate(url)
             undoStack = []; redoStack = []; selectedClipID = nil; thumbnails = [:]; playhead = 0
             rebuild(); status = "Opened \(loaded.name)."
             NSDocumentController.shared.noteNewRecentDocumentURL(url)

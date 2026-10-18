@@ -52,6 +52,10 @@ Choose **Edit a video** on Home. The editor opens in **Simple** mode: Media and 
 
 Cutline uses a warm ivory/slate palette with a terracotta accent, in **Light**, **Dark** or **System** appearance. Switch with the sun/moon button in any header, **View → Appearance**, or Settings.
 
+## AI agents (Claude Code, Codex)
+
+Cutline includes a connector so Claude Code, Codex and other MCP agents can find moments, edit projects, write hooks and captions, and export, using Cutline's engine on this Mac. Connect it in **Settings → AI agents**; a project open in Cutline updates live as the agent edits it, and **⌘Z** undoes each change. See [AI agents](docs/AI_AGENTS.md).
+
 ## Local transcription and automatic captions
 
 Captions work out of the box with macOS on-device speech recognition (audio never leaves the Mac; macOS asks for Speech Recognition permission the first time). For multilingual Whisper models and custom vocabulary, install the optional local engines once:

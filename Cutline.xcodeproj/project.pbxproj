@@ -17,10 +17,12 @@
 		168E376CAA288BC4D8F31C48 /* CreatorProfileTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 828E59C513742BFB1D51EED6 /* CreatorProfileTests.swift */; };
 		19FC360A189127A69A606CE3 /* AppEnvironmentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 737A393586093A56A559F143 /* AppEnvironmentTests.swift */; };
 		1CB852FC6424BD206BC0B420 /* ClipWorkflowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4C2643504D37975D5151F6E /* ClipWorkflowTests.swift */; };
+		1E9FC8E3864C23DCBD1850B4 /* AgentServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38C7280E3895AE71F23B50D2 /* AgentServer.swift */; };
 		224D49574F6EF2C3950E6707 /* CreatorProfileUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D4710BEFD9F8A6DA9071CB8 /* CreatorProfileUITests.swift */; };
 		22A04099C0E727AE0FDCC21C /* MediaConversion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17AC9BF4C9C0B5D3EF9C6777 /* MediaConversion.swift */; };
 		23C2A125030A6B84E33ACC8C /* CompositionEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = DEF70A43ADAC2270E902AB89 /* CompositionEngine.swift */; };
 		26881C626625B281660D159C /* ExportDestination.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68C11B848DBC15AC1CEAB2CE /* ExportDestination.swift */; };
+		27F0DB80CC9590ED8263C3CD /* AgentTools.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89F10C8B18AC5DE58F43FC9B /* AgentTools.swift */; };
 		2A07F43DB08E1AE176948A1A /* ClipperSheets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 501833418DB52BB43055021F /* ClipperSheets.swift */; };
 		2A36ABA0DAC81AA82EEB309F /* EditingFeatures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DF7E94470149ABA75E182B9 /* EditingFeatures.swift */; };
 		2D50E67BBEE7282B9F3D2179 /* AutoClipBatch.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5425CEE0C623A89F3801B1C2 /* AutoClipBatch.swift */; };
@@ -31,12 +33,14 @@
 		37A92CFB5BABCD7A539BADDD /* AppleSpeech.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56B272A06C63DB98CA6D29A /* AppleSpeech.swift */; };
 		3897FCA2CDDA7CD4E39E3221 /* AssistantTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F5E44E02EDCAE9AB225BE24 /* AssistantTests.swift */; };
 		3E8610D00944513941492163 /* AutoClipTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2825EC3F0F8632907CA3EB52 /* AutoClipTests.swift */; };
+		417E76CDD53692BC607A2D3E /* AgentEdits.swift in Sources */ = {isa = PBXBuildFile; fileRef = E743E2EBE36AD4871311BF6F /* AgentEdits.swift */; };
 		4385DE03D9C47105189148A0 /* CutlineCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7DBF8499D41F3D7D11EC182C /* CutlineCore.framework */; };
 		4973D1B27D7F824F47E5AFEB /* autoclip.mp4 in Resources */ = {isa = PBXBuildFile; fileRef = 27208F14B860604BBF5042B2 /* autoclip.mp4 */; };
 		4C716BE2A0DB4A63F6CB28BC /* ClipAnalysis.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7943FF0E88885065B67DA1C1 /* ClipAnalysis.swift */; };
 		4CA9A07AA11E100C338081C6 /* FixtureSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F91945EAE489CA2A8450BDF /* FixtureSupport.swift */; };
 		4F8CEE60CBA7BF942AC31F43 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = EDCA447080AA4B5C2478D570 /* Sparkle */; };
 		52999FC91EDAAC8CCCBDD088 /* TimelineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 804B5D3E5F844D960FF3140D /* TimelineView.swift */; };
+		565FAAFC851FD8F168329A51 /* CutlineCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7DBF8499D41F3D7D11EC182C /* CutlineCore.framework */; };
 		57A625AFFF16F4A5D6A3D422 /* ClipMediaScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49C9C123ACAC118F808A3D31 /* ClipMediaScanner.swift */; };
 		5881EA617B6E21F09E0FED16 /* GenerationPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C363A5A0A2CFF268AD670D63 /* GenerationPanel.swift */; };
 		59D0C8C72BC9AF0EB18E0C72 /* ProjectTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43822AF2BFC214D11548514F /* ProjectTests.swift */; };
@@ -59,6 +63,8 @@
 		831023792793174C100AB1AC /* TranscriptEditTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 039298C99AAF06243B50386B /* TranscriptEditTests.swift */; };
 		857527343542CCDD2B7FC275 /* CutlineApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3D70834E1EE72266ACD00A3 /* CutlineApp.swift */; };
 		867230704B5F9613404BB75C /* AdditionalUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D8E9F5C5BCA55C38CFEE3A7 /* AdditionalUITests.swift */; };
+		86A68AFC5F466167E284D6FE /* AgentUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E437B8A2900BE917BFA5CCC2 /* AgentUITests.swift */; };
+		8A47ADB2A4964F8C6EB9AE62 /* CutlineMCP in Embed Dependencies */ = {isa = PBXBuildFile; fileRef = D5C89A75312D3C13BC8A8AE5 /* CutlineMCP */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		8CA8519DAFADF98F4FFC9F25 /* EditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BB3AEF55D63B23A9D980028 /* EditorView.swift */; };
 		8E1F64382377355A76B8CCC2 /* ShortBranding.swift in Sources */ = {isa = PBXBuildFile; fileRef = A66BF41DD9A747A6E96340C9 /* ShortBranding.swift */; };
 		8EF8A9F7E1FA320FB3413792 /* Captions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4478FF38551B411FC0863825 /* Captions.swift */; };
@@ -78,16 +84,20 @@
 		C6B970A4206B971004479758 /* AppIcon.icns in Resources */ = {isa = PBXBuildFile; fileRef = 5DE53015BC9E50BCAC5947F9 /* AppIcon.icns */; };
 		C9255AC783260C22EE0171FE /* ClipHUD.swift in Sources */ = {isa = PBXBuildFile; fileRef = F950B72B031856EA8DCCE922 /* ClipHUD.swift */; };
 		CAEF6EB4236E89D27A61A2CD /* AutoClipping.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0324D7ED6CDBEBA41C9B8F1 /* AutoClipping.swift */; };
+		CB309436E68D5CD05931B4D1 /* AgentSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A5D29E8A3AB0ABEB424357A /* AgentSupport.swift */; };
 		CC8D269FE5D20636AA2F979E /* captions.srt in Resources */ = {isa = PBXBuildFile; fileRef = A656FACB90A2EBEBC1466257 /* captions.srt */; };
 		CF541D409A3051B902C65AF0 /* OutputWorkflowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9578AE5E5A123C52EC5A908F /* OutputWorkflowTests.swift */; };
 		CF799CBD7C517A23CDAEF92B /* CutlineCore.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 7DBF8499D41F3D7D11EC182C /* CutlineCore.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		D019811AEB25E4E385E3CA66 /* CutlineCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7DBF8499D41F3D7D11EC182C /* CutlineCore.framework */; };
+		D1B3B3ADB46EA80BA754289A /* AgentServerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0970BE7F7C6162A2D05ABEF4 /* AgentServerTests.swift */; };
 		D765A094E469279D0532A27D /* LocalTranscription.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4D04F0A3184DDC6B30723F1 /* LocalTranscription.swift */; };
 		D9874BAA6286A3D540BA8766 /* InspectorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF3FF04AE966D9DE0A617ED /* InspectorView.swift */; };
 		DB48987AA3FEC769E0E1032B /* CutlineCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7DBF8499D41F3D7D11EC182C /* CutlineCore.framework */; };
 		DD5D5CC7F9E3ACDDD93AD978 /* CreatorProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3F1E5D192A1F0A8189D586A /* CreatorProfileView.swift */; };
+		E0E1E956121AA095E6E5A10E /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F2228BB705A39EB5F813244 /* main.swift */; };
 		E13B88160F2B326921890E00 /* LayersPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B6E20C4045300B30F8B1EB7 /* LayersPanel.swift */; };
 		E5172575DC4A18EB694D9CB3 /* ClipperReviewStep.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69331372A71D5EDB6634BA12 /* ClipperReviewStep.swift */; };
+		E619B840FCFDEA5ED34CDC13 /* AgentJSON.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56A58A8E97EC0653DB5C7755 /* AgentJSON.swift */; };
 		E7EC4F95F9628876E83D4C90 /* UITestRuntime.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CC5FEABEC09EE0DB78C9D1A /* UITestRuntime.swift */; };
 		E88665443E7561C09FE70A75 /* UpdateUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DEBF09E7BD6F2AE0166D22BB /* UpdateUITests.swift */; };
 		E95751DF5911D2BB4D936A34 /* ShortFramingSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0159351117F19039984FBAD /* ShortFramingSheet.swift */; };
@@ -99,6 +109,13 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		4B4D0D4EE1CD9AD67A8CD451 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A87F416B96438BCB167D8740 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D650B12DEB8E22DB53F74D0D;
+			remoteInfo = CutlineMCP;
+		};
 		8227F64B652F9E9838858C1E /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = A87F416B96438BCB167D8740 /* Project object */;
@@ -134,6 +151,13 @@
 			remoteGlobalIDString = C96339649500470810D24502;
 			remoteInfo = CutlineCore;
 		};
+		E13F91F716F66957690CC241 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A87F416B96438BCB167D8740 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = C96339649500470810D24502;
+			remoteInfo = CutlineCore;
+		};
 		F2A9FF0A1239D1C1ACF36607 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = A87F416B96438BCB167D8740 /* Project object */;
@@ -153,6 +177,17 @@
 				695BD41A28A5EB5F300F8AF3 /* CutlineCore.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2312942E933A03B79F166EA2 /* Embed Dependencies */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 6;
+			files = (
+				8A47ADB2A4964F8C6EB9AE62 /* CutlineMCP in Embed Dependencies */,
+			);
+			name = "Embed Dependencies";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		8D05FE5D72FF03C559E1A97F /* Embed Frameworks */ = {
@@ -193,6 +228,7 @@
 /* Begin PBXFileReference section */
 		039298C99AAF06243B50386B /* TranscriptEditTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptEditTests.swift; sourceTree = "<group>"; };
 		0673DC8A6FA7B27E1AEDFA34 /* ValidationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ValidationTests.swift; sourceTree = "<group>"; };
+		0970BE7F7C6162A2D05ABEF4 /* AgentServerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentServerTests.swift; sourceTree = "<group>"; };
 		0DF7E94470149ABA75E182B9 /* EditingFeatures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditingFeatures.swift; sourceTree = "<group>"; };
 		17AC9BF4C9C0B5D3EF9C6777 /* MediaConversion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaConversion.swift; sourceTree = "<group>"; };
 		1AF3FF04AE966D9DE0A617ED /* InspectorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InspectorView.swift; sourceTree = "<group>"; };
@@ -206,8 +242,10 @@
 		30223F54CDB643EE1A5BC58C /* EditorStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorStore.swift; sourceTree = "<group>"; };
 		3097DBE5DBB9A6C34092CF9E /* ClipWorkflow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipWorkflow.swift; sourceTree = "<group>"; };
 		312E067B4547EAB83E4E80D9 /* ClipperImportStep.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipperImportStep.swift; sourceTree = "<group>"; };
+		38C7280E3895AE71F23B50D2 /* AgentServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentServer.swift; sourceTree = "<group>"; };
 		3AB948F1654F70A6CD4E2704 /* LocalSpeechTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalSpeechTests.swift; sourceTree = "<group>"; };
 		3B08ECD9ABCBAA0906BE848D /* CreatorProfileStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatorProfileStoreTests.swift; sourceTree = "<group>"; };
+		3F2228BB705A39EB5F813244 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		3F91945EAE489CA2A8450BDF /* FixtureSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FixtureSupport.swift; sourceTree = "<group>"; };
 		43374A462A18A5300A4DC7BD /* AdjustmentsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdjustmentsView.swift; sourceTree = "<group>"; };
 		43822AF2BFC214D11548514F /* ProjectTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectTests.swift; sourceTree = "<group>"; };
@@ -216,6 +254,7 @@
 		4B6E20C4045300B30F8B1EB7 /* LayersPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LayersPanel.swift; sourceTree = "<group>"; };
 		501833418DB52BB43055021F /* ClipperSheets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipperSheets.swift; sourceTree = "<group>"; };
 		5425CEE0C623A89F3801B1C2 /* AutoClipBatch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoClipBatch.swift; sourceTree = "<group>"; };
+		56A58A8E97EC0653DB5C7755 /* AgentJSON.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentJSON.swift; sourceTree = "<group>"; };
 		5D8E9F5C5BCA55C38CFEE3A7 /* AdditionalUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdditionalUITests.swift; sourceTree = "<group>"; };
 		5DE53015BC9E50BCAC5947F9 /* AppIcon.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon.icns; sourceTree = "<group>"; };
 		6086A46CE0C05750B061D5E7 /* FeatureActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureActions.swift; sourceTree = "<group>"; };
@@ -234,12 +273,14 @@
 		7F5E44E02EDCAE9AB225BE24 /* AssistantTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantTests.swift; sourceTree = "<group>"; };
 		804B5D3E5F844D960FF3140D /* TimelineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimelineView.swift; sourceTree = "<group>"; };
 		828E59C513742BFB1D51EED6 /* CreatorProfileTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatorProfileTests.swift; sourceTree = "<group>"; };
+		89F10C8B18AC5DE58F43FC9B /* AgentTools.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentTools.swift; sourceTree = "<group>"; };
 		8CC5FEABEC09EE0DB78C9D1A /* UITestRuntime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UITestRuntime.swift; sourceTree = "<group>"; };
 		8D4710BEFD9F8A6DA9071CB8 /* CreatorProfileUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatorProfileUITests.swift; sourceTree = "<group>"; };
 		8E8AF852118AAAE684E8B937 /* CutlineAppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CutlineAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		9578AE5E5A123C52EC5A908F /* OutputWorkflowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OutputWorkflowTests.swift; sourceTree = "<group>"; };
 		97546C00BADE8F69B0C497C7 /* gameplay.mp4 */ = {isa = PBXFileReference; path = gameplay.mp4; sourceTree = "<group>"; };
 		9961DF80A14F21481682F2D3 /* FeatureUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureUITests.swift; sourceTree = "<group>"; };
+		9A5D29E8A3AB0ABEB424357A /* AgentSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentSupport.swift; sourceTree = "<group>"; };
 		9D6956C0427D5FA27D8551AF /* CutlineCoreTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CutlineCoreTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		9F326077208AE54AD4517CBF /* AutoClipUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoClipUITests.swift; sourceTree = "<group>"; };
 		A0159351117F19039984FBAD /* ShortFramingSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortFramingSheet.swift; sourceTree = "<group>"; };
@@ -263,13 +304,16 @@
 		D16E2A2530993680D1C3A197 /* Project.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Project.swift; sourceTree = "<group>"; };
 		D2455FB297BE1835A69D9942 /* Cutline.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Cutline.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		D4C2643504D37975D5151F6E /* ClipWorkflowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipWorkflowTests.swift; sourceTree = "<group>"; };
+		D5C89A75312D3C13BC8A8AE5 /* CutlineMCP */ = {isa = PBXFileReference; includeInIndex = 0; path = CutlineMCP; sourceTree = BUILT_PRODUCTS_DIR; };
 		DBA11A57548E540297A899CA /* ClipperActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipperActions.swift; sourceTree = "<group>"; };
 		DC99F3D5036FB5CEB0A7A3F2 /* CutlineUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CutlineUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		DEBF09E7BD6F2AE0166D22BB /* UpdateUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateUITests.swift; sourceTree = "<group>"; };
 		DEF70A43ADAC2270E902AB89 /* CompositionEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompositionEngine.swift; sourceTree = "<group>"; };
 		E0324D7ED6CDBEBA41C9B8F1 /* AutoClipping.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoClipping.swift; sourceTree = "<group>"; };
+		E437B8A2900BE917BFA5CCC2 /* AgentUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentUITests.swift; sourceTree = "<group>"; };
 		E4D04F0A3184DDC6B30723F1 /* LocalTranscription.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalTranscription.swift; sourceTree = "<group>"; };
 		E59149C509DC41B1BEE85161 /* EditingAssistant.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditingAssistant.swift; sourceTree = "<group>"; };
+		E743E2EBE36AD4871311BF6F /* AgentEdits.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentEdits.swift; sourceTree = "<group>"; };
 		E9D4822474BC7D8589A9DA55 /* ClipperExportStep.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipperExportStep.swift; sourceTree = "<group>"; };
 		EBC1E504DEE4F7AA31C907EB /* music.m4a */ = {isa = PBXFileReference; path = music.m4a; sourceTree = "<group>"; };
 		EE2484314D7AE7D8C6BC0CBE /* VideoCompositor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoCompositor.swift; sourceTree = "<group>"; };
@@ -311,9 +355,26 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		E3B8A06608C799763F95C097 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				565FAAFC851FD8F168329A51 /* CutlineCore.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		228A3682A7EE9B778751640E /* CutlineMCP */ = {
+			isa = PBXGroup;
+			children = (
+				3F2228BB705A39EB5F813244 /* main.swift */,
+			);
+			name = CutlineMCP;
+			path = Sources/CutlineMCP;
+			sourceTree = "<group>";
+		};
 		3DE843C6598CA69C8578C8B6 /* Fixtures */ = {
 			isa = PBXGroup;
 			children = (
@@ -337,6 +398,7 @@
 				B193709EC006F97A3F625D6E /* CutlineAppTests */,
 				EA64D7BFC4F0FDCA150159A3 /* CutlineCore */,
 				AEE9ECAD9C212B7927872461 /* CutlineCoreTests */,
+				228A3682A7EE9B778751640E /* CutlineMCP */,
 				AD12166AD25BA1E25FBC84D0 /* CutlineUITests */,
 				FD52E0A4AA7C655AE380604B /* Products */,
 			);
@@ -346,6 +408,7 @@
 			isa = PBXGroup;
 			children = (
 				5D8E9F5C5BCA55C38CFEE3A7 /* AdditionalUITests.swift */,
+				E437B8A2900BE917BFA5CCC2 /* AgentUITests.swift */,
 				9F326077208AE54AD4517CBF /* AutoClipUITests.swift */,
 				8D4710BEFD9F8A6DA9071CB8 /* CreatorProfileUITests.swift */,
 				711038B227C9CE321B2E671C /* EditorUITests.swift */,
@@ -360,6 +423,7 @@
 		AEE9ECAD9C212B7927872461 /* CutlineCoreTests */ = {
 			isa = PBXGroup;
 			children = (
+				0970BE7F7C6162A2D05ABEF4 /* AgentServerTests.swift */,
 				737A393586093A56A559F143 /* AppEnvironmentTests.swift */,
 				7F5E44E02EDCAE9AB225BE24 /* AssistantTests.swift */,
 				2825EC3F0F8632907CA3EB52 /* AutoClipTests.swift */,
@@ -397,6 +461,7 @@
 			isa = PBXGroup;
 			children = (
 				43374A462A18A5300A4DC7BD /* AdjustmentsView.swift */,
+				9A5D29E8A3AB0ABEB424357A /* AgentSupport.swift */,
 				29C9D6AD411AF75BD3AB6377 /* AIPanel.swift */,
 				A56B272A06C63DB98CA6D29A /* AppleSpeech.swift */,
 				F624EB94224743B8479D51C3 /* CaptionPanel.swift */,
@@ -437,6 +502,10 @@
 		EA64D7BFC4F0FDCA150159A3 /* CutlineCore */ = {
 			isa = PBXGroup;
 			children = (
+				E743E2EBE36AD4871311BF6F /* AgentEdits.swift */,
+				56A58A8E97EC0653DB5C7755 /* AgentJSON.swift */,
+				38C7280E3895AE71F23B50D2 /* AgentServer.swift */,
+				89F10C8B18AC5DE58F43FC9B /* AgentTools.swift */,
 				7061E8B9EE92792844BA7752 /* AppEnvironment.swift */,
 				5425CEE0C623A89F3801B1C2 /* AutoClipBatch.swift */,
 				E0324D7ED6CDBEBA41C9B8F1 /* AutoClipping.swift */,
@@ -468,6 +537,7 @@
 				8E8AF852118AAAE684E8B937 /* CutlineAppTests.xctest */,
 				7DBF8499D41F3D7D11EC182C /* CutlineCore.framework */,
 				9D6956C0427D5FA27D8551AF /* CutlineCoreTests.xctest */,
+				D5C89A75312D3C13BC8A8AE5 /* CutlineMCP */,
 				DC99F3D5036FB5CEB0A7A3F2 /* CutlineUITests.xctest */,
 			);
 			name = Products;
@@ -506,11 +576,13 @@
 				5414366B16DCDB70A7F916A2 /* Resources */,
 				6D6B68B5FADA7A0E658662DD /* Frameworks */,
 				E444D084E29787AF53192710 /* Embed Frameworks */,
+				2312942E933A03B79F166EA2 /* Embed Dependencies */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 				C79A2DE48304E38E963949EE /* PBXTargetDependency */,
+				84A26144B8FFFCA3E8F7C9CF /* PBXTargetDependency */,
 			);
 			name = Cutline;
 			packageProductDependencies = (
@@ -536,6 +608,25 @@
 			productName = CutlineCore;
 			productReference = 7DBF8499D41F3D7D11EC182C /* CutlineCore.framework */;
 			productType = "com.apple.product-type.framework";
+		};
+		D650B12DEB8E22DB53F74D0D /* CutlineMCP */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 2470F9C28525520207D2BBDE /* Build configuration list for PBXNativeTarget "CutlineMCP" */;
+			buildPhases = (
+				566DE5AF07A1062FB563B516 /* Sources */,
+				E3B8A06608C799763F95C097 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				ED99D0DFE9DB001DCDFA5B60 /* PBXTargetDependency */,
+			);
+			name = CutlineMCP;
+			packageProductDependencies = (
+			);
+			productName = CutlineMCP;
+			productReference = D5C89A75312D3C13BC8A8AE5 /* CutlineMCP */;
+			productType = "com.apple.product-type.tool";
 		};
 		DB5C87B38962A08833AD6202 /* CutlineCoreTests */ = {
 			isa = PBXNativeTarget;
@@ -599,6 +690,9 @@
 					C96339649500470810D24502 = {
 						ProvisioningStyle = Manual;
 					};
+					D650B12DEB8E22DB53F74D0D = {
+						ProvisioningStyle = Manual;
+					};
 					DB5C87B38962A08833AD6202 = {
 						ProvisioningStyle = Manual;
 					};
@@ -628,6 +722,7 @@
 				EB0194CCB2069CAC1B627DDE /* CutlineAppTests */,
 				C96339649500470810D24502 /* CutlineCore */,
 				DB5C87B38962A08833AD6202 /* CutlineCoreTests */,
+				D650B12DEB8E22DB53F74D0D /* CutlineMCP */,
 				383A85C52CD7DE7847F28DA5 /* CutlineUITests */,
 			);
 		};
@@ -679,6 +774,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				417E76CDD53692BC607A2D3E /* AgentEdits.swift in Sources */,
+				E619B840FCFDEA5ED34CDC13 /* AgentJSON.swift in Sources */,
+				1E9FC8E3864C23DCBD1850B4 /* AgentServer.swift in Sources */,
+				27F0DB80CC9590ED8263C3CD /* AgentTools.swift in Sources */,
 				0D118C45E07E6622FD42330A /* AppEnvironment.swift in Sources */,
 				2D50E67BBEE7282B9F3D2179 /* AutoClipBatch.swift in Sources */,
 				CAEF6EB4236E89D27A61A2CD /* AutoClipping.swift in Sources */,
@@ -706,6 +805,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				867230704B5F9613404BB75C /* AdditionalUITests.swift in Sources */,
+				86A68AFC5F466167E284D6FE /* AgentUITests.swift in Sources */,
 				BB7BDE44B704523E3EF34BDC /* AutoClipUITests.swift in Sources */,
 				224D49574F6EF2C3950E6707 /* CreatorProfileUITests.swift in Sources */,
 				0CA9A9C658341C758E75AEE2 /* EditorUITests.swift in Sources */,
@@ -715,12 +815,21 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		566DE5AF07A1062FB563B516 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E0E1E956121AA095E6E5A10E /* main.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		7D811C6E554D7ECC18C56C24 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				753B5FB217BE7A8DA401D452 /* AIPanel.swift in Sources */,
 				A796F068D412748B491F2B2A /* AdjustmentsView.swift in Sources */,
+				CB309436E68D5CD05931B4D1 /* AgentSupport.swift in Sources */,
 				37A92CFB5BABCD7A539BADDD /* AppleSpeech.swift in Sources */,
 				F68872AB5ACF59F49BA87602 /* CaptionPanel.swift in Sources */,
 				C57DE0191DA8CE79BEF16842 /* ClipperActions.swift in Sources */,
@@ -762,6 +871,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D1B3B3ADB46EA80BA754289A /* AgentServerTests.swift in Sources */,
 				19FC360A189127A69A606CE3 /* AppEnvironmentTests.swift in Sources */,
 				3897FCA2CDDA7CD4E39E3221 /* AssistantTests.swift in Sources */,
 				3E8610D00944513941492163 /* AutoClipTests.swift in Sources */,
@@ -793,6 +903,11 @@
 			target = C96339649500470810D24502 /* CutlineCore */;
 			targetProxy = A4CAB2EFEE1C3099120D7059 /* PBXContainerItemProxy */;
 		};
+		84A26144B8FFFCA3E8F7C9CF /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = D650B12DEB8E22DB53F74D0D /* CutlineMCP */;
+			targetProxy = 4B4D0D4EE1CD9AD67A8CD451 /* PBXContainerItemProxy */;
+		};
 		928145BE978A0EFB0047A9D0 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 9C1FE72617C96F3CA74DF3A4 /* Cutline */;
@@ -807,6 +922,11 @@
 			isa = PBXTargetDependency;
 			target = C96339649500470810D24502 /* CutlineCore */;
 			targetProxy = 8227F64B652F9E9838858C1E /* PBXContainerItemProxy */;
+		};
+		ED99D0DFE9DB001DCDFA5B60 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = C96339649500470810D24502 /* CutlineCore */;
+			targetProxy = E13F91F716F66957690CC241 /* PBXContainerItemProxy */;
 		};
 		FD59B64D901D56739D09D415 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -843,6 +963,17 @@
 					"@loader_path/../Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = studio.cutline.CutlineCoreTests;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		53F5B95D34ADB4824CEC8EE6 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = studio.cutline.CutlineMCP;
+				PRODUCT_NAME = "cutline-mcp";
 				SDKROOT = macosx;
 			};
 			name = Debug;
@@ -930,6 +1061,17 @@
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Cutline.app/Contents/MacOS/Cutline";
 			};
 			name = Debug;
+		};
+		B9FAC4DD3AEF5ACD529ADC6F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = studio.cutline.CutlineMCP;
+				PRODUCT_NAME = "cutline-mcp";
+				SDKROOT = macosx;
+			};
+			name = Release;
 		};
 		DA91C7CB1F33A96F42097EEB /* Debug */ = {
 			isa = XCBuildConfiguration;
@@ -1119,6 +1261,15 @@
 			buildConfigurations = (
 				18254FA42691582763C0C26E /* Debug */,
 				6250800555D2E8A9F0B5BF7D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		2470F9C28525520207D2BBDE /* Build configuration list for PBXNativeTarget "CutlineMCP" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				53F5B95D34ADB4824CEC8EE6 /* Debug */,
+				B9FAC4DD3AEF5ACD529ADC6F /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;

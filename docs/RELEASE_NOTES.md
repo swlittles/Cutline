@@ -12,6 +12,12 @@ A guided, four-step path from a stream recording to finished shorts, a simpler e
 - **Captions without setup.** Turn on captions and Cutline writes them for the kept clips when you export, using macOS on-device speech recognition. Whisper is used instead when it is installed with a model. Audio never leaves the Mac.
 - **Edit a clip without losing your picks.** **Edit this clip…** opens one moment in the editor; **Back to my clips** returns with every decision, hook and trim. Sessions autosave, and Home offers to continue after a relaunch.
 
+## Let an AI agent do the editing
+
+- **Claude Code and Codex can use Cutline.** Connect them in **Settings → AI agents** with one click (or a copied command). Then ask in plain words: "find the best moments in my stream and make five shorts", "trim the intro and add music", "add captions and export".
+- Agents find moments, look at frames, cut, trim, reorder, set hooks, layouts, captions and music, and export shorts or full videos, using the same engine and saved layouts as the app. Rendering happens on this Mac; the agent's own service sees what the tools return, such as file paths, timings, captions and the frames it looks at.
+- A project open in Cutline updates live as the agent works; **⌘Z** undoes each change, and Cutline asks before replacing your unsaved edits.
+
 ## A simpler editor
 
 - **Simple** mode shows what most edits need: import, Add to timeline, Start here / End here trimming, volume, captions, hook, layout and Export. **Advanced** adds layers, AI, numeric trims, transform/speed/color and per-track audio.

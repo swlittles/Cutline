@@ -17,7 +17,7 @@ public enum LocalTools {
             let helper = root.appendingPathComponent("Helpers/\(name)")
             if FileManager.default.isExecutableFile(atPath: helper.path) { return helper }
         }
-        let paths = [Bundle.main.bundleURL.appendingPathComponent("Contents/Helpers/\(name)").path, "/opt/homebrew/bin/\(name)", "/usr/local/bin/\(name)", "/usr/bin/\(name)"]
+        let paths = [AppEnvironment.hostBundle.bundleURL.appendingPathComponent("Contents/Helpers/\(name)").path, "/opt/homebrew/bin/\(name)", "/usr/local/bin/\(name)", "/usr/bin/\(name)"]
         return paths.first(where: { FileManager.default.isExecutableFile(atPath: $0) }).map { URL(fileURLWithPath: $0) }
     }
     public static func require(_ name: String) throws -> URL {

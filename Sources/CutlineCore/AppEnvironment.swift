@@ -8,5 +8,14 @@ public struct AppEnvironment: Equatable, Sendable {
     public var bundleIdentifier: String { isDevelopment ? "studio.cutline.editor.dev" : "studio.cutline.editor" }
     public var credentialService: String { isDevelopment ? "studio.cutline.dev.openrouter" : "studio.cutline.openrouter" }
     public func supportURL(root: URL) -> URL { root.appendingPathComponent(name, isDirectory: true) }
-    public static let current = AppEnvironment(bundleIdentifier: Bundle.main.bundleIdentifier)
+    public static let current = AppEnvironment(bundleIdentifier: hostBundle.bundleIdentifier)
+    /// The app this code ships in. The agent connector sits in the app's Contents/MacOS, where
+    /// `Bundle.main` is just the executable's folder, so it shares the app's settings through this.
+    public static let hostBundle: Bundle = {
+        if Bundle.main.bundleURL.pathExtension == "app" { return Bundle.main }
+        let executable = (Bundle.main.executableURL ?? URL(fileURLWithPath: CommandLine.arguments[0])).resolvingSymlinksInPath()
+        let app = executable.deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        if app.pathExtension == "app", executable.deletingLastPathComponent().lastPathComponent == "MacOS", let bundle = Bundle(url: app) { return bundle }
+        return Bundle.main
+    }()
 }

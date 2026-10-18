@@ -73,6 +73,7 @@ struct UpdatesSettingsView: View {
                 Toggle("Show advanced editing tools", isOn: $advanced)
             }
             Section("Your channel") { CreatorProfileView() }
+            Section("AI agents") { AgentSettingsView() }
             Section("Updates") {
                 Text("\(AppEnvironment.current.name) \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "")").foregroundStyle(Studio.muted)
                 if updates.enabled {

@@ -112,6 +112,32 @@ import CutlineCore
         store.undo(); XCTAssertEqual(store.project, before)
         store.cutRanges([TimelineRange(start: 0, end: 5)]); XCTAssertEqual(store.project, before); XCTAssertNotNil(store.error)
     }
+    func testAnOpenProjectFollowsAgentEditsAndUndoTakesThemBack() async throws {
+        seed()
+        let url = root.appendingPathComponent("Agent.cutline")
+        try store.project.write(to: url); store.loadProject(url)
+        XCTAssertEqual(store.mode, .editor)
+        store.followProjectFile()
+        XCTAssertTrue(store.undoStack.isEmpty, "an unchanged file is not reloaded")
+        // An agent edits the same file through Cutline's connector.
+        let tools = AgentTools(support: root, exportRoot: root, appVersion: "test")
+        let edited = try await tools.call("edit_project", arguments: ["path": .string(url.path), "operations": [["op": "trim_clip", "clip": 1, "end": 2], ["op": "rename", "name": "From the agent"]]])
+        XCTAssertFalse(edited.isError, edited.text)
+        try FileManager.default.setAttributes([.modificationDate: Date().addingTimeInterval(5)], ofItemAtPath: url.path)
+        store.followProjectFile()
+        XCTAssertEqual(store.project.name, "From the agent")
+        XCTAssertEqual(store.project.clips.first?.sourceOut, 2)
+        XCTAssertFalse(store.dirty)
+        XCTAssertTrue(store.status.contains("AI agent"))
+        store.undo()
+        XCTAssertEqual(store.project.clips.first?.sourceOut, 5)
+        XCTAssertTrue(store.dirty, "undoing the agent's edit is a change the user can save")
+        // Saving records the file's new date, so Cutline's own save never reloads.
+        XCTAssertTrue(store.save())
+        let undoDepth = store.undoStack.count
+        store.followProjectFile()
+        XCTAssertEqual(store.undoStack.count, undoDepth)
+    }
     func testSaveAndLoadRoundTripClearsDirtyState() throws {
         seed(); store.projectURL = root.appendingPathComponent("Saved.cutline"); store.commit { $0.format = .square }
         XCTAssertTrue(store.save()); XCTAssertFalse(store.dirty)
