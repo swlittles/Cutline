@@ -28,7 +28,7 @@ public enum ClipMediaScanner {
         }
         var frames = 0, ocrReads = 0
         if settings.visionEnabled || settings.useOCR {
-            guard !(try await asset.loadTracks(withMediaType: .video)).isEmpty else { throw EditError.invalid("No video track is available for visual sampling.") }
+            let videoEnd = try await ClipAnalyzer.videoEnd(asset, duration: duration)
             let generator = AVAssetImageGenerator(asset: asset)
             generator.appliesPreferredTrackTransform = true
             generator.maximumSize = CGSize(width: settings.useOCR ? 1920 : 320, height: settings.useOCR ? 1080 : 180)
@@ -37,7 +37,7 @@ public enum ClipMediaScanner {
             defer { generator.cancelAllCGImageGeneration() }
             var previous: [UInt8]?, tracker = ClipFeedTracker(), lastTime = -1.0
             var previousHUD: [UInt8]?, lastOCR = -Double.infinity, reads: [HUDRead] = []
-            let count = Int(ceil(duration * settings.sampleFPS))
+            let count = Int(ceil(videoEnd * settings.sampleFPS))
             for i in 0..<count {
                 try Task.checkCancellation()
                 let requested = Double(i) / settings.sampleFPS

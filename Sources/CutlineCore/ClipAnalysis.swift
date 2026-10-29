@@ -179,8 +179,16 @@ public enum ClipAnalyzer {
         }
     }
 
+    /// Where frames stop. Recordings often keep audio a few frames past the last video frame,
+    /// and asking for a frame in that tail fails with "Cannot Open".
+    static func videoEnd(_ asset: AVAsset, duration: Double) async throws -> Double {
+        guard let track = try await asset.loadTracks(withMediaType: .video).first else { throw EditError.invalid("No video track is available for visual sampling.") }
+        let end = try await track.load(.timeRange).end.seconds
+        return end.isFinite && end > 0 ? min(duration, end) : duration
+    }
+
     static func sampleVideo(asset: AVAsset, key: ClipVisualKey, duration: Double, progress: @escaping (Double, Double) -> Void) async throws -> VisualResult {
-        guard !(try await asset.loadTracks(withMediaType: .video)).isEmpty else { throw EditError.invalid("No video track is available for visual sampling.") }
+        let videoEnd = try await ClipAnalyzer.videoEnd(asset, duration: duration)
         let generator = AVAssetImageGenerator(asset: asset)
         generator.appliesPreferredTrackTransform = true
         generator.maximumSize = CGSize(width: key.ocr ? 1920 : 320, height: key.ocr ? 1080 : 180)
@@ -190,7 +198,7 @@ public enum ClipAnalyzer {
         var result = VisualResult(motion: [], hud: [], frames: 0, reads: 0)
         var previous: [UInt8]?, tracker = ClipFeedTracker(), lastTime = -1.0
         var previousHUD: [UInt8]?, lastOCR = -Double.infinity, reads: [HUDRead] = []
-        let count = Int(ceil(duration * key.sampleFPS))
+        let count = Int(ceil(videoEnd * key.sampleFPS))
         for i in 0..<count {
             try Task.checkCancellation()
             let requested = Double(i) / key.sampleFPS

@@ -50,6 +50,17 @@ final class ClipWorkflowTests: XCTestCase {
         var s = quick(); s.audioTrack = 5
         do { _ = try await ClipAnalyzer.analyze(media: media, settings: s); XCTFail() } catch { XCTAssertTrue(error.localizedDescription.contains("track")) }
     }
+    /// Recorders often stop video a few frames before audio. Asking for a frame in that tail
+    /// fails with "Cannot Open", which used to fail the whole scan at its very last sample.
+    func testVisualSamplingStopsAtTheLastVideoFrame() async throws {
+        let media = try await CompositionEngine.inspect(Fixtures.url("audio-outlasts-video.mp4"))
+        XCTAssertGreaterThan(media.duration, 4.2)
+        let analysis = try await ClipAnalyzer.analyze(media: media, settings: AutoClipSettings())
+        XCTAssertEqual(analysis.sampledFrames, 8)
+        XCTAssertLessThan(try XCTUnwrap(analysis.motionSamples.last).time, 4)
+        let scanned = try await ClipMediaScanner.scan(media: media, settings: AutoClipSettings())
+        XCTAssertEqual(scanned.sampledFrames, 8)
+    }
     func testAnalysisCancellation() async throws {
         let media = try await recording()
         let task = Task { try await ClipAnalyzer.analyze(media: media, settings: AutoClipSettings()) }; task.cancel()
