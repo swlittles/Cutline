@@ -32,8 +32,8 @@ targets:
       properties:
         CFBundleDisplayName: Cutline Test Build
         CFBundleIconFile: AppIcon
-        CFBundleShortVersionString: '0.5.1'
-        CFBundleVersion: '9'
+        CFBundleShortVersionString: '0.6.0'
+        CFBundleVersion: '10'
         NSPrincipalClass: NSApplication
         NSSpeechRecognitionUsageDescription: Cutline turns the speech in your clips into captions, on this Mac.
         UTExportedTypeDeclarations:
