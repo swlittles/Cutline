@@ -118,10 +118,12 @@ extension EditorUITests {
         waitForMoments()
         tapInPanel(app.buttons["review.detection"])
         app.buttons["detection.advanced"].click()
+        reveal(app.textFields["clips.maximum"], panel: "detection.scroll")
         edit(app.textFields["clips.maximum"], "3", submit: true)
         textExists("Check scan thresholds")
         edit(app.textFields["clips.maximum"], "60", submit: true)
-        tapInPanel(app.buttons["clips.regions"])
+        reveal(app.buttons["clips.regions"], panel: "detection.scroll")
+        app.buttons["clips.regions"].click()
         XCTAssertTrue(app.sliders["clips.regionTime"].waitForExistence(timeout: 5)); app.buttons["regions.done"].click()
     }
 

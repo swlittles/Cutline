@@ -56,20 +56,31 @@ struct DetectionSettingsSheet: View {
         VStack(alignment: .leading, spacing: 16) {
             Text("How Cutline finds moments").font(Studio.title(22))
             Text("The defaults work for most streams. Changes update the list right away.").font(.system(size: 12)).foregroundStyle(Studio.muted)
-            Card(title: "Look for") {
-                Toggle("Loud reactions (track \(store.clipSettings.audioTrack + 1))", isOn: $store.clipSettings.audioEnabled)
-                    .disabled((store.clipMedia?.audioTrackCount ?? 0) == 0).accessibilityIdentifier("clips.audio")
-                Toggle("Busy gameplay on screen", isOn: $store.clipSettings.visionEnabled).accessibilityIdentifier("clips.vision")
-                if store.clipSettings.audioEnabled && store.clipSettings.visionEnabled {
-                    Toggle("Only when both happen together", isOn: $store.clipSettings.requireBoth).accessibilityIdentifier("clips.both")
+            // The settings scroll so the sheet fits the smallest window; opening the advanced ones scrolls to them.
+            ScrollViewReader { proxy in
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 16) {
+                        Card(title: "Look for") {
+                            Toggle("Loud reactions (track \(store.clipSettings.audioTrack + 1))", isOn: $store.clipSettings.audioEnabled)
+                                .disabled((store.clipMedia?.audioTrackCount ?? 0) == 0).accessibilityIdentifier("clips.audio")
+                            Toggle("Busy gameplay on screen", isOn: $store.clipSettings.visionEnabled).accessibilityIdentifier("clips.vision")
+                            if store.clipSettings.audioEnabled && store.clipSettings.visionEnabled {
+                                Toggle("Only when both happen together", isOn: $store.clipSettings.requireBoth).accessibilityIdentifier("clips.both")
+                            }
+                            Text("To use a different sound track, go back to Layout → Sound.").font(.system(size: 11)).foregroundStyle(Studio.muted)
+                        }.font(.system(size: 12))
+                        SpeechSettingsCard()
+                        Button { withAnimation(.easeOut(duration: 0.15)) { showAdvanced.toggle() } } label: {
+                            Label(showAdvanced ? "Hide advanced settings" : "Show advanced settings", systemImage: showAdvanced ? "chevron.down" : "chevron.right")
+                        }.buttonStyle(.accentLink).accessibilityIdentifier("detection.advanced")
+                        if showAdvanced { AdvancedScanSettings(showRegions: $showRegions).id("advanced") }
+                    }.padding(.trailing, 12)
+                }.frame(height: 500).accessibilityIdentifier("detection.scroll")
+                .onChange(of: showAdvanced) { _, shown in
+                    guard shown else { return }
+                    DispatchQueue.main.async { withAnimation(.easeOut(duration: 0.2)) { proxy.scrollTo("advanced", anchor: .top) } }
                 }
-                Text("To use a different sound track, go back to Layout → Sound.").font(.system(size: 11)).foregroundStyle(Studio.muted)
-            }.font(.system(size: 12))
-            SpeechSettingsCard()
-            Button { withAnimation(.easeOut(duration: 0.15)) { showAdvanced.toggle() } } label: {
-                Label(showAdvanced ? "Hide advanced settings" : "Show advanced settings", systemImage: showAdvanced ? "chevron.down" : "chevron.right")
-            }.buttonStyle(.accentLink).accessibilityIdentifier("detection.advanced")
-            if showAdvanced { ScrollView { AdvancedScanSettings(showRegions: $showRegions) }.frame(maxHeight: 340) }
+            }
             HStack { Spacer(); Button("Done") { dismiss() }.buttonStyle(.primary).keyboardShortcut(.defaultAction).accessibilityIdentifier("detection.done") }
         }.padding(24).frame(width: 520).background(Studio.base)
         .sheet(isPresented: $showRegions) { if let media = store.clipMedia { RegionCalibrationSheet(media: media).environmentObject(store) } }
