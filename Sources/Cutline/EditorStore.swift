@@ -12,7 +12,7 @@ final class EditorStore: ObservableObject {
     @Published var mode: AppMode = .home
     @Published var clipStep: ClipStep = .importVOD
     @Published var clipSettings = AutoClipSettings() { didSet { if clipSettings != oldValue { clipSettingsChanged() } } }
-    @Published var clipMediaID: UUID? { didSet { if clipMediaID != oldValue { clipSettings.hudCalibrated = false } } }
+    @Published var clipMediaID: UUID?
     @Published var clipAnalysis: ClipAnalysis?
     @Published var clipReport: AutoClipReport?
     @Published var focusedMoment: String?
@@ -28,6 +28,47 @@ final class EditorStore: ObservableObject {
     @Published var parkedSession: ParkedSession?
     @Published var recoverableSession: RecoverableSession?
     @Published var exportFolder: URL = UserDefaults.standard.string(forKey: "export-folder").map { URL(fileURLWithPath: $0, isDirectory: true) } ?? EditorStore.defaultExportFolder
+    /// Everything said in the recording, for finding moments by speech and for captions.
+    @Published var streamTranscript: StreamTranscript?
+    @Published var isListening = false
+    @Published var listenProgress = 0.0
+    @Published var listenMessage = ""
+    @Published var aiPicks: AIClipPicks?
+    /// What the vision model saw, when frames were sent.
+    @Published var screenNotes: [ScreenNote] = []
+    @Published var isPickingWithAI = false
+    @Published var aiPickProgress = 0.0
+    @Published var aiPickMessage = ""
+    @Published var listenToStream = UserDefaults.standard.object(forKey: "clip-listen") as? Bool ?? true {
+        didSet { UserDefaults.standard.set(listenToStream, forKey: "clip-listen"); if listenToStream { listenIfNeeded() } else { stopListening() } }
+    }
+    @Published var aiFindsMoments = UserDefaults.standard.object(forKey: "clip-ai-picks") as? Bool ?? true {
+        didSet { UserDefaults.standard.set(aiFindsMoments, forKey: "clip-ai-picks"); if aiFindsMoments { pickWithAIIfNeeded() } else { aiPickTask?.cancel(); isPickingWithAI = false }; evaluateMoments() }
+    }
+    @Published var openRouterConnected = OpenRouterKeychain.read() != nil
+    /// Each AI step in clip finding has its own model. The editor's AI panel keeps `aiModel`.
+    @Published var clipPickModel = UserDefaults.standard.string(forKey: "clip-model-picks") ?? EditingAssistant.defaultModel {
+        didSet { UserDefaults.standard.set(clipPickModel, forKey: "clip-model-picks") }
+    }
+    @Published var clipCopyModel = UserDefaults.standard.string(forKey: "clip-model-copy") ?? EditingAssistant.defaultModel {
+        didSet { UserDefaults.standard.set(clipCopyModel, forKey: "clip-model-copy") }
+    }
+    @Published var clipVisionModel = UserDefaults.standard.string(forKey: "clip-model-vision") ?? EditingAssistant.defaultModel {
+        didSet { UserDefaults.standard.set(clipVisionModel, forKey: "clip-model-vision") }
+    }
+    @Published var aiPolishesCopy = UserDefaults.standard.object(forKey: "clip-ai-copy") as? Bool ?? true {
+        didSet { UserDefaults.standard.set(aiPolishesCopy, forKey: "clip-ai-copy") }
+    }
+    /// Off by default: this uploads still frames, not just text.
+    @Published var aiLooksAtFrames = UserDefaults.standard.bool(forKey: "clip-ai-vision") {
+        didSet { UserDefaults.standard.set(aiLooksAtFrames, forKey: "clip-ai-vision") }
+    }
+    @Published var visionFrameBudget = UserDefaults.standard.object(forKey: "clip-ai-vision-frames") as? Int ?? ClipVisionAI.defaultBudget {
+        didSet { UserDefaults.standard.set(visionFrameBudget, forKey: "clip-ai-vision-frames") }
+    }
+    var aiPickAttempts: Set<String> = []
+    var listenTask: Task<Void, Never>?
+    var aiPickTask: Task<Void, Never>?
     let reviewPlayer = AVPlayer()
     let auditionPlayer = AVPlayer()
     var clipTask: Task<Void, Never>?
@@ -57,7 +98,9 @@ final class EditorStore: ObservableObject {
     @Published var isThinking = false
     @Published var aiProgress = ""
     @Published var aiProposal: AIEditProposal?
-    @Published var aiModel = UserDefaults.standard.string(forKey: "openrouter-model") ?? EditingAssistant.defaultModel
+    @Published var aiModel = UserDefaults.standard.string(forKey: "openrouter-model") ?? EditingAssistant.defaultModel {
+        didSet { UserDefaults.standard.set(aiModel, forKey: "openrouter-model") }
+    }
     @Published var aiPrompt = "Find the best gaming highlights for short clips. Include the setup and reaction, and suggest engaging titles."
     @Published var isGenerating = false
     @Published var generationMessage = ""
@@ -101,7 +144,7 @@ final class EditorStore: ObservableObject {
     init() {
         do { creatorProfile = try CreatorProfileStore.load() } catch { self.error = error.localizedDescription }
         if let data = try? Data(contentsOf: LocalTools.support.appendingPathComponent("autoclip-profiles.json")), let profiles = try? JSONDecoder().decode([String: AutoClipSettings].self, from: data) { clipProfiles = profiles }
-        if let saved = clipProfiles["last"] { clipSettings = saved }; clipSettings.hudCalibrated = false
+        if let saved = clipProfiles["last"] { clipSettings = saved }
         do { scenePresets = try ScenePresetStore.load() } catch { self.error = error.localizedDescription }
         if LocalTools.testingRoot != nil { exportFolder = Self.defaultExportFolder }
         refreshRecoverableSession()

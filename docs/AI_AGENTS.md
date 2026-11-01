@@ -45,5 +45,4 @@ Then ask in plain words, for example:
 ## Limits
 
 - Captions from speech need Whisper (`scripts/setup-local-ai.sh`). The app's built-in macOS speech recognition isn't available to the connector, because macOS grants speech permission to the app, not to a command-line process.
-- HUD/OCR elimination detection needs the in-app calibration, so agents scan with audio and motion.
 - Detection measures activity, not quality. Agents should look at frames before choosing.

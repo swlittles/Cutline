@@ -50,6 +50,14 @@ final class CaptionTests: XCTestCase {
         XCTAssertEqual(reread.map(\.text), cues.map(\.text))
         XCTAssertEqual(reread.map(\.start), cues.map(\.start))
     }
+    func testSpeechEngineOutputIsReadLeniently() throws {
+        // Whisper sometimes writes a zero-length line, or nothing but blank lines over music.
+        let srt = "1\n00:00:01,000 --> 00:00:01,000\nno\n\n2\n00:00:02,000 --> 00:00:03,000\nway\n\n3\n00:00:05,000 --> 00:00:04,000\nbackwards\n"
+        XCTAssertThrowsError(try SubtitleFile.decode(srt))
+        let lines = try SubtitleFile.decode(srt, lenient: true)
+        XCTAssertEqual(lines.map(\.text), ["no", "way", "backwards"]); XCTAssertEqual(lines[0].end, 1.2, accuracy: 0.001)
+        XCTAssertEqual(try SubtitleFile.decode("1\n00:00:01,000 --> 00:00:02,000\n\n", lenient: true), [])
+    }
     func testInvalidCaptionsRejected() {
         XCTAssertThrowsError(try SubtitleFile.decode("1\n00:01,000 --> 00:00,500\nNo\n"))
         XCTAssertThrowsError(try SubtitleFile.decode("invalid"))

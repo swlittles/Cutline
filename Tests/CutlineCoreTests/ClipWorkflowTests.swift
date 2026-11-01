@@ -68,7 +68,7 @@ final class ClipWorkflowTests: XCTestCase {
     }
     func testMarkersBecomeMomentsWithoutOtherEvidence() async throws {
         let media = try await recording()
-        var s = quick(); s.audioEnabled = false; s.visionEnabled = false; s.useOCR = false
+        var s = quick(); s.audioEnabled = false; s.visionEnabled = false
         var analysis = ClipAnalysis(media: media); analysis.audioTracks = [:]
         XCTAssertThrowsError(try analysis.report(settings: s), "No detector enabled")
         s.audioEnabled = true; analysis.audioTracks = [0: [], 1: []]; s.visionEnabled = false
@@ -138,7 +138,7 @@ final class ClipWorkflowTests: XCTestCase {
         let root = try Fixtures.temporary(); defer { try? FileManager.default.removeItem(at: root) }
         XCTAssertEqual(try ScenePresetStore.load(from: root), [])
         var framing = ShortFraming(); framing.camera.x = 0.6
-        let preset = ScenePreset(name: "Valorant main", framing: framing, audioRoles: [.mix, .mic], game: .valorant, motionRegion: ClipScanRegion(x: 0, y: 0, width: 0.5, height: 0.5))
+        let preset = ScenePreset(name: "Main", framing: framing, audioRoles: [.mix, .mic], motionRegion: ClipScanRegion(x: 0, y: 0, width: 0.5, height: 0.5))
         try ScenePresetStore.save([preset], to: root)
         XCTAssertEqual(try ScenePresetStore.load(from: root), [preset])
         let path = root.appendingPathComponent("scene-presets.json").path
@@ -201,11 +201,13 @@ final class ClipWorkflowTests: XCTestCase {
         XCTAssertEqual(AutoClipBatch.fileName("a/b: c?\n"), "a-b- c")
         XCTAssertEqual(AutoClipBatch.fileName("..."), "Clip")
     }
-    func testHookIdeasAreShortAndUseEvidence() {
-        let kills = AutoClipCandidate(id: "k", start: 0, end: 12, score: 80, evidence: [ClipEvidence(time: 1, signal: .elimination, detail: ""), ClipEvidence(time: 2, signal: .elimination, detail: "")])
-        let ideas = HookIdeas.suggestions(for: kills, game: .valorant)
-        XCTAssertEqual(ideas.first, "2 kills in 12 seconds"); XCTAssertTrue(ideas.contains("This is why I play Valorant"))
+    func testHookIdeasAreShortAndPutTheAIHookFirst() {
+        let loud = AutoClipCandidate(id: "k", start: 0, end: 12, score: 80, evidence: [ClipEvidence(time: 1, signal: .audio, strength: 0.9, detail: "")])
+        let ideas = HookIdeas.suggestions(for: loud)
+        XCTAssertEqual(ideas.first, "I was NOT ready for this")
         XCTAssertTrue(ideas.allSatisfy { !$0.isEmpty && $0.count <= 80 }); XCTAssertLessThanOrEqual(ideas.count, 5)
+        var picked = loud; picked.hook = "He had one bullet left"
+        XCTAssertEqual(HookIdeas.suggestions(for: picked).first, "He had one bullet left")
     }
     func testClockTime() {
         XCTAssertEqual(clockTime(0), "0:00"); XCTAssertEqual(clockTime(65.9), "1:05"); XCTAssertEqual(clockTime(3725), "1:02:05"); XCTAssertEqual(clockTime(.nan), "0:00")
@@ -284,7 +286,6 @@ final class MomentTitleTests: XCTestCase {
         XCTAssertEqual(make([.audio, .motion]).title, "Big reaction during action")
         XCTAssertEqual(make([.audio]).title, "Big reaction")
         XCTAssertEqual(make([.motion]).title, "Lots of action")
-        XCTAssertEqual(make([.elimination, .elimination]).title, "2 eliminations")
         XCTAssertEqual(make([.marker]).title, "Marked moment")
     }
 }

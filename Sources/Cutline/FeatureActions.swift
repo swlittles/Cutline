@@ -39,7 +39,7 @@ extension EditorStore {
         guard !isDownloadingModel else { return }
         let model = speechModel; isDownloadingModel = true
         downloadTask = Task {
-            do { try await model.download(); status = "Local speech model installed and verified." }
+            do { try await model.download(); try? await WhisperVAD.download(); status = "Local speech model installed and verified."; isDownloadingModel = false; listenIfNeeded() }
             catch { if !(error is CancellationError) { self.error = error.localizedDescription } }
             isDownloadingModel = false
         }

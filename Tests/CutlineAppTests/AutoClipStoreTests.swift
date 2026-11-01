@@ -76,17 +76,6 @@ extension EditorStoreTests {
         try await Task.sleep(nanoseconds: 100_000_000)
         XCTAssertNil(store.clipReport); XCTAssertFalse(store.isScanningClips); XCTAssertNil(store.clipAnalysis)
     }
-    func testGameProfilesRetainPerGameEditsButKeepTracks() {
-        store.clipSettings.audioTrack = 1
-        store.selectClipGame(.valorant); store.clipSettings.aliases = "Custom player"
-        store.selectClipGame(.cs2); XCTAssertEqual(store.clipSettings.aliases, ""); XCTAssertEqual(store.clipSettings.audioTrack, 1)
-        store.selectClipGame(.valorant); XCTAssertEqual(store.clipSettings.aliases, "Custom player")
-    }
-    func testCalibrationClearsOnSourceProfileAndProjectChanges() {
-        store.clipSettings.hudCalibrated = true; store.clipMediaID = UUID(); XCTAssertFalse(store.clipSettings.hudCalibrated)
-        store.clipSettings.hudCalibrated = true; store.selectClipGame(.valorant); XCTAssertFalse(store.clipSettings.hudCalibrated)
-        store.clipSettings.hudCalibrated = true; store.resetJobs(); XCTAssertFalse(store.clipSettings.hudCalibrated)
-    }
 }
 
 extension EditorStoreTests {
@@ -96,10 +85,10 @@ extension EditorStoreTests {
         store.chooseVOD(media.id)
         XCTAssertTrue(store.canEnter(.setup)); XCTAssertFalse(store.canEnter(.review))
         store.goTo(.review); XCTAssertEqual(store.clipStep, .importVOD, "Locked steps cannot be entered")
-        XCTAssertTrue(store.completeSetup(framing: ShortFraming(), roles: [.mic, .ignore], game: .valorant, branding: nil, presetName: nil))
+        XCTAssertTrue(store.completeSetup(framing: ShortFraming(), roles: [.mic, .ignore], branding: nil, presetName: nil))
         XCTAssertEqual(store.clipStep, .review, "Setup goes straight to picking clips while moments are found")
         XCTAssertEqual(store.project.media[0].shortFraming?.confirmed, true)
-        XCTAssertEqual(store.project.media[0].audioRoles, [.mic, .ignore]); XCTAssertEqual(store.clipSettings.game, .valorant)
+        XCTAssertEqual(store.project.media[0].audioRoles, [.mic, .ignore])
         try await until({ !self.store.isScanningClips && !self.store.moments.isEmpty }, timeout: 30)
         XCTAssertFalse(store.canEnter(.export))
         store.goTo(.review); store.setHook(store.focusedMoment!, "Clean"); XCTAssertTrue(store.keepFocused())
@@ -108,10 +97,10 @@ extension EditorStoreTests {
     func testSetupRequiresBrandingAndSavesScenePreset() throws {
         var media = MediaItem(url: fixture.appendingPathComponent("autoclip.mp4"), duration: 12); media.audioTrackCount = 2
         store.project.media = [media]; store.clipMediaID = media.id
-        XCTAssertFalse(store.completeSetup(framing: ShortFraming(), roles: [.mix, .mic], game: .generic, branding: nil, presetName: nil))
+        XCTAssertFalse(store.completeSetup(framing: ShortFraming(), roles: [.mix, .mic], branding: nil, presetName: nil))
         XCTAssertNotNil(store.error); store.error = nil
         var framing = ShortFraming(); framing.camera.x = 0.7
-        XCTAssertTrue(store.completeSetup(framing: framing, roles: [.mix, .mic], game: .siege, branding: ShortBranding(kick: "me"), presetName: "Siege cam"))
+        XCTAssertTrue(store.completeSetup(framing: framing, roles: [.mix, .mic], branding: ShortBranding(kick: "me"), presetName: "Siege cam"))
         XCTAssertEqual(store.creatorProfile.kick, "me")
         XCTAssertEqual(try ScenePresetStore.load(from: root).map(\.name), ["Siege cam"])
         XCTAssertEqual(store.lastScenePreset?.framing.camera.x, 0.7)
@@ -120,7 +109,7 @@ extension EditorStoreTests {
         store.project.media.append(next); store.clipMediaID = next.id
         store.applyScenePreset(store.lastScenePreset!)
         XCTAssertEqual(store.project.media[1].shortFraming?.confirmed, true); XCTAssertEqual(store.project.media[1].audioRoles, [.mix, .mic])
-        XCTAssertEqual(store.clipSettings.game, .siege); XCTAssertTrue(store.canEnter(.review))
+        XCTAssertTrue(store.canEnter(.review))
         store.undo(); XCTAssertNil(store.project.media[1].shortFraming)
     }
     func testKeepWithoutHookUsesSuggestionInOneUndoStep() async throws {
@@ -235,5 +224,31 @@ extension EditorStoreTests {
         XCTAssertEqual(try store.preparedAutoClip(candidate, report: store.clipReport!).projectedCaptions().map(\.text), ["Nice shot!"])
         store.nudge(start: true, by: -1)
         XCTAssertNil(store.review?.captions[candidate.id], "Trimming invalidates captions for that clip")
+    }
+}
+
+extension EditorStoreTests {
+    func testCachedTranscriptAndAIPicksBecomeMomentsAndCaptions() async throws {
+        let media = clipSeed()
+        let spoken = StreamTranscript(audioTrack: 0, engine: "test", segments: [TranscriptSegment(start: 1, end: 3, text: "did that just happen"), TranscriptSegment(start: 3.2, end: 5, text: "no way")])
+        try StreamTranscriptCache.save(spoken, for: media)
+        try AIClipPicksCache.save(AIClipPicks(audioTrack: 0, model: "test/model", picks: [AIClipPick(start: 0.5, end: 6, title: "The shot nobody expected", hook: "Watch the corner", reason: "disbelief in the voice", score: 80)]), for: media)
+        defer { store.aiFindsMoments = true }
+        store.mode = .clipper; store.chooseVOD(media.id)
+        XCTAssertEqual(store.streamTranscript, spoken, "A transcript made earlier is reused, not redone")
+        try await until({ !self.store.isScanningClips && self.store.moments.contains { $0.pickedByAI } }, timeout: 30)
+        let picked = try XCTUnwrap(store.moments.first { $0.pickedByAI })
+        XCTAssertEqual(picked.title, "The shot nobody expected"); XCTAssertEqual(HookIdeas.suggestions(for: picked).first, "Watch the corner")
+        XCTAssertEqual(store.spokenText(picked), "did that just happen no way")
+        XCTAssertFalse(store.isPickingWithAI, "Cached picks don't call the AI again")
+
+        store.focus(picked.id); XCTAssertTrue(store.keepFocused())
+        store.setClipCaptions(true)
+        let captioned = await store.transcribePendingClips()
+        XCTAssertTrue(captioned)
+        XCTAssertEqual(store.review?.captions[picked.id]?.map(\.text), ["did that just happen", "no way"], "Kept clips take their captions from the stream transcript")
+
+        store.aiFindsMoments = false
+        try await until({ !self.store.moments.contains { $0.pickedByAI } })
     }
 }

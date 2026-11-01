@@ -47,18 +47,8 @@ final class AutoClipTests: XCTestCase {
         var s = AutoClipSettings(); s.requireBoth = false
         XCTAssertEqual(AutoClipRules.candidates(evidence: [event(10, .motion)], duration: 60, settings: s).count, 1)
     }
-    func testMarkersWorkWithoutAudioOrOCRMatches() {
+    func testMarkersWorkWithoutAudioOrMotion() {
         XCTAssertEqual(AutoClipRules.candidates(evidence: [event(10, .marker)], duration: 60, settings: AutoClipSettings()).first?.title, "Marked moment")
-    }
-    func testMinimumKillsAndRepeatGrouping() {
-        XCTAssertTrue(AutoClipRules.candidates(evidence: [event(10, .elimination)], duration: 60, settings: AutoClipSettings()).isEmpty)
-        let clips = AutoClipRules.candidates(evidence: [event(10, .elimination),event(18, .elimination)], duration: 60, settings: AutoClipSettings())
-        XCTAssertEqual(clips.count, 1); XCTAssertEqual(clips.first?.start, 4); XCTAssertEqual(clips.first?.end, 22)
-    }
-    func testDeathBreaksEncounterAndPadding() {
-        var s = AutoClipSettings(); s.minimumKills = 1
-        let clips = AutoClipRules.candidates(evidence: [event(10, .elimination),event(12, .death),event(14, .elimination)], duration: 60, settings: s)
-        XCTAssertEqual(clips.count, 2); XCTAssertEqual(clips[0].end, 12); XCTAssertEqual(clips[1].start, 12)
     }
     func testPaddingClampsToRecordingAndCapsCount() {
         var s = audioOnly(); s.maxClips = 1
@@ -84,46 +74,7 @@ final class AutoClipTests: XCTestCase {
         var s = AutoClipSettings(); s.audioRiseDB = .nan; XCTAssertThrowsError(try s.validate())
         s = AutoClipSettings(); s.lead = 30; s.tail = 30; XCTAssertThrowsError(try s.validate())
         s = AutoClipSettings(); s.audioEnabled = false; s.visionEnabled = false; XCTAssertThrowsError(try s.validate())
-        s = AutoClipSettings(); s.hud.width = 2; XCTAssertThrowsError(try s.validate())
-    }
-    func testOCRRequiresExplicitCalibrationAndRealAliases() {
-        var s = AutoClipSettings(); XCTAssertFalse(s.useOCR); s.useOCR = true
-        XCTAssertThrowsError(try s.validate()); s.hudCalibrated = true; XCTAssertThrowsError(try s.validate()); s.aliases = "PlayerOne"; XCTAssertNoThrow(try s.validate())
-        s.aliases = "You,  "; XCTAssertThrowsError(try s.validate())
-    }
-    func testGameProfilesMatchReferenceAndNoInventedUnsupportedFeed() {
-        XCTAssertEqual(AutoClipSettings.preset(.valorant).aliases, "")
-        XCTAssertFalse(ClipGame.tarkov.hasFeedPreset); XCTAssertFalse(ClipGame.wardogs.hasFeedPreset)
-        for game in ClipGame.allCases { XCTAssertNoThrow(try AutoClipSettings.preset(game).validate()) }
-    }
-    func row(_ killer: String = "PlayerOne", _ victim: String = "enemy", gap: Double = 40, confidence: Double = 1) -> [HUDWord] {
-        [HUDWord(killer,x: 0,y: 0,width: 100,height: 20,confidence: confidence), HUDWord(victim,x: 100 + gap,y: 0,width: 70,height: 20,confidence: confidence)]
-    }
-    func testHUDExactIdentityAndVictimIsDeathNotKill() {
-        XCTAssertEqual(ClipHUD.parse(row("  PLAYERONE "), aliases: ["PlayerOne"]).first?.death, false)
-        XCTAssertEqual(ClipHUD.parse(row("Enemy", "PlayerOne"), aliases: ["PlayerOne"]).first?.death, true)
-        XCTAssertTrue(ClipHUD.parse(row("PlayerOne123"), aliases: ["PlayerOne"]).isEmpty)
-        XCTAssertTrue(ClipHUD.parse(row("You"), aliases: ["You"]).isEmpty)
-    }
-    func testHUDRejectsTextWithoutGapLowConfidenceAndAssists() {
-        XCTAssertTrue(ClipHUD.parse(row(gap: 5), aliases: ["PlayerOne"]).isEmpty)
-        XCTAssertTrue(ClipHUD.parse(row(confidence: 0.7), aliases: ["PlayerOne"]).isEmpty)
-        XCTAssertTrue(ClipHUD.parse(row("PlayerOne + ally"), aliases: ["PlayerOne"]).isEmpty)
-        XCTAssertTrue(ClipHUD.parse(row("PlayerOne","PlayerOne"), aliases: ["PlayerOne"]).isEmpty)
-    }
-    func testFeedRequiresTwoTimesAndDeduplicatesPersistentRows() {
-        var tracker = ClipFeedTracker(); let reads = ClipHUD.parse(row(), aliases: ["PlayerOne"])
-        XCTAssertTrue(tracker.update(at: 0, reads: reads + reads).isEmpty)
-        XCTAssertTrue(tracker.update(at: 0, reads: reads).isEmpty)
-        XCTAssertEqual(tracker.update(at: 0.5, reads: reads).count, 1)
-        for i in 2..<30 { XCTAssertTrue(tracker.update(at: Double(i)/2, reads: reads).isEmpty) }
-        XCTAssertTrue(tracker.update(at: 20, reads: reads).isEmpty)
-        XCTAssertEqual(tracker.update(at: 20.5, reads: reads).count, 1)
-    }
-    func testIntermittentReadsDoNotConfirm() {
-        var tracker = ClipFeedTracker(); let reads = ClipHUD.parse(row(), aliases: ["PlayerOne"])
-        XCTAssertTrue(tracker.update(at: 1, reads: reads).isEmpty)
-        XCTAssertTrue(tracker.update(at: 4, reads: reads).isEmpty)
+        s = AutoClipSettings(); s.motionRegion.width = 2; XCTAssertThrowsError(try s.validate())
     }
     func testClipProjectPreservesSourceRangeAndRejectsBadRange() throws {
         let media = MediaItem(url: Fixtures.url("autoclip.mp4"), duration: 12)
@@ -137,7 +88,7 @@ final class AutoClipTests: XCTestCase {
         media.shortFraming = ShortFraming(); media.shortFraming?.confirmed = true
         var s = AutoClipSettings(); s.lead = 1; s.tail = 1
         let report = try await ClipMediaScanner.scan(media: media, settings: s)
-        XCTAssertEqual(report.candidates.count, 1); XCTAssertGreaterThan(report.sampledFrames, 20); XCTAssertEqual(report.ocrReads, 0)
+        XCTAssertEqual(report.candidates.count, 1); XCTAssertGreaterThan(report.sampledFrames, 20)
         XCTAssertTrue(report.evidence.contains { $0.signal == .audio && (5...7).contains($0.time) })
         XCTAssertTrue(report.evidence.contains { $0.signal == .motion && (5...8).contains($0.time) })
         XCTAssertGreaterThanOrEqual(report.candidates[0].start, 4); XCTAssertLessThanOrEqual(report.candidates[0].end, 9)
@@ -189,27 +140,6 @@ final class AutoClipTests: XCTestCase {
     }
 }
 
-extension AutoClipTests {
-    func testVisionOCRRecognizesSyntheticKillFeed() throws {
-        let image = try syntheticHUD()
-        let reads = try ClipHUD.read(image, aliases: ["PlayerOne"])
-        XCTAssertEqual(reads.first?.killer, "playerone"); XCTAssertEqual(reads.first?.victim, "rival")
-        XCTAssertEqual(reads.first?.death, false)
-    }
-}
-
-extension AutoClipTests {
-    func syntheticHUD() throws -> CGImage {
-        let context = try XCTUnwrap(CGContext(data: nil, width: 800, height: 100, bitsPerComponent: 8, bytesPerRow: 3200, space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
-        context.setFillColor(CGColor(gray: 0, alpha: 1)); context.fill(CGRect(x: 0, y: 0, width: 800, height: 100))
-        NSGraphicsContext.saveGraphicsState(); defer { NSGraphicsContext.restoreGraphicsState() }
-        NSGraphicsContext.current = NSGraphicsContext(cgContext: context, flipped: false)
-        let attrs: [NSAttributedString.Key: Any] = [.font: NSFont.monospacedSystemFont(ofSize: 36, weight: .bold), .foregroundColor: NSColor.white]
-        NSAttributedString(string: "PlayerOne", attributes: attrs).draw(at: NSPoint(x: 20, y: 30))
-        NSAttributedString(string: "Rival", attributes: attrs).draw(at: NSPoint(x: 450, y: 30))
-        return try XCTUnwrap(context.makeImage())
-    }
-}
 
 extension AutoClipTests {
     func testZeroPaddingStillRespectsMaximumDuration() {

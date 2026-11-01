@@ -73,7 +73,7 @@ public final class AgentTools: @unchecked Sendable {
                           "size": number("Longest side in pixels, 160–1920. Default 768.")], required: [], readOnly: true, idempotent: true),
         Spec(name: "find_moments", title: "Find moments in a stream",
              description: "Scans a recording for highlights (loud reactions and busy gameplay) and returns moments with start/end seconds, a score and hook ideas. Results are measurements, not judgments: look at them with view_frame and pick the good ones. Rescans of the same file are instant.",
-             properties: ["video_path": string("The stream recording."), "game": ["type": "string", "enum": .array(ClipGame.allCases.map { .string($0.rawValue) }), "description": "Tunes clip lengths. Default: the last game used in Cutline."],
+             properties: ["video_path": string("The stream recording."),
                           "layout": string("A saved layout name from get_setup. Sets the mic track and the gameplay area to watch."),
                           "sensitivity": number("0 = fewer, stronger moments; 1 = more, looser. Default 0.5."), "max_moments": number("1–100. Default 20."),
                           "audio_track": number("Audio track to listen to for reactions (1 = first). Usually the mic.")], required: ["video_path"], idempotent: true),
@@ -211,13 +211,12 @@ public final class AgentTools: @unchecked Sendable {
             "app": .string("Cutline \(appVersion)"),
             "branding": Self.json(profile),
             "saved_layouts": .array(presets().map { preset in
-                ["name": .string(preset.name), "game": .string(preset.game.rawValue), "facecam": Self.json(preset.framing.camera), "gameplay": Self.json(preset.framing.gameplay),
+                ["name": .string(preset.name), "facecam": Self.json(preset.framing.camera), "gameplay": Self.json(preset.framing.gameplay),
                  "audio_tracks": .array(preset.audioRoles.enumerated().map { ["track": JSON($0.offset + 1), "role": .string($0.element.label)] })]
             }),
             "captions": .string(whisper && model != nil ? "Ready (Whisper \(model!.rawValue))." : "Not set up: open Cutline and turn on captions, or install whisper-cli and FFmpeg. You can still add captions with edit_project add_captions."),
             "mkv_conversion": .string(LocalTools.executable("ffmpeg") != nil ? "Ready." : "Needs FFmpeg. Otherwise remux to MP4 in OBS (File → Remux Recordings)."),
             "output_folder": .string(exportRoot.path),
-            "games": .array(ClipGame.allCases.map { .string($0.rawValue) }),
             "notes": .array(profile.displayText.isEmpty ? [.string("Shorts need the user\u{2019}s \(profile.badge.label) username for the channel badge. Ask them, then call set_branding.")] : [])
         ]
     }
@@ -295,13 +294,10 @@ public final class AgentTools: @unchecked Sendable {
 
     // MARK: - Stream clipping
 
-    func scanSettings(game: ClipGame?) -> AutoClipSettings {
+    func scanSettings() -> AutoClipSettings {
         let url = support.appendingPathComponent("autoclip-profiles.json")
         let profiles = (try? Data(contentsOf: url)).flatMap { try? JSONDecoder().decode([String: AutoClipSettings].self, from: $0) } ?? [:]
-        var settings = game.map { profiles[$0.rawValue] ?? .preset($0) } ?? profiles["last"] ?? AutoClipSettings()
-        // HUD reading needs a calibration only the app can do.
-        settings.useOCR = false; settings.hudCalibrated = false
-        return settings
+        return profiles["last"] ?? AutoClipSettings()
     }
     func preset(named name: String) throws -> ScenePreset {
         let all = presets()
@@ -313,16 +309,11 @@ public final class AgentTools: @unchecked Sendable {
 
     func findMoments(_ a: Arguments, _ progress: @escaping AgentProgress) async throws -> AgentToolResult {
         var item = try await media(try a.string("video_path"), progress)
-        let game = try a.optionalString("game").map { name -> ClipGame in
-            guard let game = ClipGame(rawValue: name) else { throw EditError.invalid("game is one of \(ClipGame.allCases.map(\.rawValue).joined(separator: ", ")).") }
-            return game
-        }
-        var settings = scanSettings(game: game)
+        var settings = scanSettings()
         let tracks = item.audioTrackCount ?? 0
         if let name = try a.optionalString("layout") {
             let preset = try preset(named: name)
             preset.apply(to: &item)
-            if game == nil { settings = scanSettings(game: preset.game) }
             settings.motionRegion = preset.motionRegion
             let routes = AudioRoutes(item.audioRoles ?? [])
             settings.audioTrack = routes.detect; settings.outputAudioTracks = routes.export
@@ -349,10 +340,10 @@ public final class AgentTools: @unchecked Sendable {
             ["number": JSON(index + 1), "start": Self.round(candidate.start), "end": Self.round(candidate.end), "length": Self.round(candidate.end - candidate.start),
              "starts_at": .string(clockTime(candidate.start)), "title": .string(candidate.title), "score": Self.round(candidate.score),
              "why": .array(Array(Set(candidate.evidence.map(\.detail))).sorted().prefix(4).map(JSON.string)),
-             "hook_ideas": .array(HookIdeas.suggestions(for: candidate, game: settings.game).map(JSON.string))]
+             "hook_ideas": .array(HookIdeas.suggestions(for: candidate).map(JSON.string))]
         }
         return AgentToolResult([
-            "video_path": .string(item.url.path), "length": Self.round(item.duration), "game": .string(settings.game.rawValue),
+            "video_path": .string(item.url.path), "length": Self.round(item.duration),
             "listened_to_track": tracks == 0 ? .null : JSON(settings.audioTrack + 1),
             "moments": .array(moments),
             "next": .string(moments.isEmpty ? "Nothing stood out. Try sensitivity 0.8, another audio_track, or pick times yourself with view_frame." : "Check moments with view_frame, then export_shorts with a hook for each one you keep."),

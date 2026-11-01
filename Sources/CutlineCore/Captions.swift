@@ -100,20 +100,26 @@ public enum SubtitleFile {
         let ms = Int((max(0, min(seconds.isFinite ? seconds : 0, 1e9)) * 1000).rounded())
         return String(format: "%02d:%02d:%02d%@%03d", ms / 3600000, ms / 60000 % 60, ms / 1000 % 60, vtt ? "." : ",", ms % 1000)
     }
-    public static func decode(_ text: String) throws -> [TranscriptSegment] {
+    /// `lenient` is for a speech engine's own output: zero-length lines get a short duration,
+    /// unreadable ones are skipped, and finding no speech is not an error.
+    public static func decode(_ text: String, lenient: Bool = false) throws -> [TranscriptSegment] {
         let normalized = text.replacingOccurrences(of: "\r\n", with: "\n").replacingOccurrences(of: "\r", with: "\n").replacingOccurrences(of: "\u{FEFF}", with: "")
         var result: [TranscriptSegment] = []
         for block in normalized.components(separatedBy: "\n\n") {
             let lines = block.components(separatedBy: "\n")
             guard let lineIndex = lines.firstIndex(where: { $0.contains("-->") }) else { continue }
             let times = lines[lineIndex].components(separatedBy: "-->")
-            guard times.count == 2, let start = parseTime(times[0]), let end = parseTime(times[1].trimmingCharacters(in: .whitespaces).components(separatedBy: " ")[0]) else { throw EditError.invalid("Malformed subtitle timestamp.") }
+            guard times.count == 2, let start = parseTime(times[0]), var end = parseTime(times[1].trimmingCharacters(in: .whitespaces).components(separatedBy: " ")[0]) else {
+                if lenient { continue }; throw EditError.invalid("Malformed subtitle timestamp.")
+            }
             let words = lines.dropFirst(lineIndex + 1).joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
             guard !words.isEmpty else { continue }
+            if lenient && end <= start { end = start + 0.2 }
             let segment = TranscriptSegment(start: start, end: end, text: words)
-            try segment.validate(); result.append(segment)
+            if lenient { guard (try? segment.validate()) != nil else { continue } } else { try segment.validate() }
+            result.append(segment)
         }
-        guard !result.isEmpty else { throw EditError.invalid("No readable SRT or WebVTT captions were found.") }
+        guard !result.isEmpty || lenient else { throw EditError.invalid("No readable SRT or WebVTT captions were found.") }
         return result.sorted { $0.start < $1.start }
     }
     private static func parseTime(_ text: String) -> Double? {

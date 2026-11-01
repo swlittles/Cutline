@@ -42,7 +42,24 @@ public enum WhisperModel: String, CaseIterable, Identifiable, Sendable {
     public var file: URL { LocalTools.support.appendingPathComponent("Models/ggml-\(rawValue).bin") }
     public var installed: Bool { FileManager.default.fileExists(atPath: file.path) }
     public func download() async throws {
-        let url = URL(string: "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-\(rawValue).bin")!
+        try await ModelDownload.fetch(URL(string: "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-\(rawValue).bin")!, checksum: checksum, to: file)
+    }
+}
+
+/// Silero voice activity detection for whisper.cpp. Without it, Whisper invents repeating lines
+/// over music and silence, which a whole stream has plenty of.
+public enum WhisperVAD {
+    static let checksum = "29940d98d42b91fbd05ce489f3ecf7c72f0a42f027e4875919a28fb4c04ea2cf"
+    public static var file: URL { LocalTools.support.appendingPathComponent("Models/ggml-silero-v5.1.2.bin") }
+    public static var installed: Bool { FileManager.default.fileExists(atPath: file.path) }
+    /// Under 1 MB.
+    public static func download() async throws {
+        try await ModelDownload.fetch(URL(string: "https://huggingface.co/ggml-org/whisper-vad/resolve/main/ggml-silero-v5.1.2.bin")!, checksum: checksum, to: file)
+    }
+}
+
+enum ModelDownload {
+    static func fetch(_ url: URL, checksum: String, to file: URL) async throws {
         let (temporary, response) = try await URLSession.shared.download(from: url)
         defer { try? FileManager.default.removeItem(at: temporary) }
         guard (response as? HTTPURLResponse)?.statusCode == 200 else { throw EditError.invalid("Model download failed. Check your connection and try again.") }
@@ -55,7 +72,7 @@ public enum WhisperModel: String, CaseIterable, Identifiable, Sendable {
         try Task.checkCancellation()
         guard hash == checksum else { throw EditError.invalid("The model download failed its integrity check. Please retry.") }
         try FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
-        if installed { _ = try FileManager.default.replaceItemAt(file, withItemAt: temporary) }
+        if FileManager.default.fileExists(atPath: file.path) { _ = try FileManager.default.replaceItemAt(file, withItemAt: temporary) }
         else { try FileManager.default.moveItem(at: temporary, to: file) }
     }
 }
@@ -127,6 +144,7 @@ public enum LocalTranscription {
         let chunkDuration = 300.0
         let count = max(1, Int(ceil((finish - origin) / chunkDuration)))
         var segments: [TranscriptSegment] = []
+        var useVAD = WhisperVAD.installed
         for index in 0..<count {
             try Task.checkCancellation()
             let start = origin + Double(index) * chunkDuration
@@ -137,10 +155,15 @@ public enum LocalTranscription {
             progress(.init(fraction: (Double(index) + 0.15) / Double(count), message: "Transcribing locally · section \(index + 1)/\(count)"))
             var args = ["-m", model.file.path, "-f", wav.path, "-l", model == .base ? language : "en", "-t", "4", "-osrt", "-of", output.path, "-ml", "42", "-sow", "-sns"]
             if !vocabulary.isEmpty { args += ["--prompt", String(vocabulary.prefix(1000))] }
-            _ = try await ProcessRunner.run(whisper, args)
+            if useVAD {
+                do { _ = try await ProcessRunner.run(whisper, args + ["--vad", "-vm", WhisperVAD.file.path]) }
+                catch is CancellationError { throw CancellationError() }
+                // Older whisper-cli builds don't know --vad.
+                catch { useVAD = false; _ = try await ProcessRunner.run(whisper, args) }
+            } else { _ = try await ProcessRunner.run(whisper, args) }
             let subtitle = try String(contentsOf: output.appendingPathExtension("srt"), encoding: .utf8)
             if !subtitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                let decoded = try SubtitleFile.decode(subtitle)
+                let decoded = try SubtitleFile.decode(subtitle, lenient: true)
                 segments += decoded.compactMap { segment in
                     let low = max(0, segment.start), high = min(length, segment.end)
                     guard high > low else { return nil }

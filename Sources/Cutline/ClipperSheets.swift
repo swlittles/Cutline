@@ -65,6 +65,7 @@ struct DetectionSettingsSheet: View {
                 }
                 Text("To use a different sound track, go back to Layout → Sound.").font(.system(size: 11)).foregroundStyle(Studio.muted)
             }.font(.system(size: 12))
+            SpeechSettingsCard()
             Button { withAnimation(.easeOut(duration: 0.15)) { showAdvanced.toggle() } } label: {
                 Label(showAdvanced ? "Hide advanced settings" : "Show advanced settings", systemImage: showAdvanced ? "chevron.down" : "chevron.right")
             }.buttonStyle(.accentLink).accessibilityIdentifier("detection.advanced")
@@ -72,6 +73,74 @@ struct DetectionSettingsSheet: View {
             HStack { Spacer(); Button("Done") { dismiss() }.buttonStyle(.primary).keyboardShortcut(.defaultAction).accessibilityIdentifier("detection.done") }
         }.padding(24).frame(width: 520).background(Studio.base)
         .sheet(isPresented: $showRegions) { if let media = store.clipMedia { RegionCalibrationSheet(media: media).environmentObject(store) } }
+    }
+}
+
+/// Transcribing the stream on this Mac, and letting an AI model pick moments from it.
+private struct SpeechSettingsCard: View {
+    @EnvironmentObject var store: EditorStore
+    @State private var key = ""
+    var body: some View {
+        Card(title: "What was said") {
+            Toggle("Transcribe the stream on this Mac", isOn: $store.listenToStream).accessibilityIdentifier("clips.listen")
+            Group {
+                switch store.captionEngine {
+                case .whisper: Text("Uses Whisper (\(store.speechModel.rawValue)). A 3-hour stream takes about 10 minutes.")
+                case .apple: Text("Uses macOS speech recognition. For faster, more accurate transcripts, install Whisper: run scripts/setup-local-ai.sh, then download a model.")
+                case .whisperNeedsModel: Text("Whisper is installed but needs a speech model.")
+                case .unavailable: Text("Needs Whisper (run scripts/setup-local-ai.sh) or macOS speech recognition (System Settings → Keyboard → Dictation).")
+                }
+            }.font(.system(size: 11)).foregroundStyle(Studio.muted).fixedSize(horizontal: false, vertical: true)
+            if store.captionEngine == .whisperNeedsModel {
+                Button(store.isDownloadingModel ? "Downloading speech model…" : "Download speech model (148 MB)", action: store.downloadSpeechModel).buttonStyle(.secondary).disabled(store.isDownloadingModel)
+            }
+            if let transcript = store.streamTranscript { Text("Transcript ready · \(transcript.segments.count) lines").font(.system(size: 11)).foregroundStyle(Studio.muted) }
+            else if store.isListening { ProgressLine(value: store.listenProgress, message: store.listenMessage) }
+            Divider()
+            Toggle("Let AI pick moments from the transcript", isOn: $store.aiFindsMoments).accessibilityIdentifier("clips.ai")
+            if store.aiFindsMoments {
+                if !store.openRouterConnected {
+                    HStack {
+                        SecureField("OpenRouter API key", text: $key).textFieldStyle(.roundedBorder).accessibilityIdentifier("clips.aiKey")
+                        Button("Connect") {
+                            do { try store.saveOpenRouterKey(key); key = "" } catch { store.error = error.localizedDescription }
+                        }.buttonStyle(.secondary).disabled(key.trimmingCharacters(in: .whitespaces).isEmpty)
+                    }
+                }
+                Grid(alignment: .leading, horizontalSpacing: 10, verticalSpacing: 8) {
+                    GridRow {
+                        Text("Picking moments").foregroundStyle(Studio.muted)
+                        modelField($store.clipPickModel, id: "clips.pickModel")
+                    }
+                    GridRow {
+                        Toggle("Titles and hooks", isOn: $store.aiPolishesCopy).accessibilityIdentifier("clips.aiCopy")
+                        modelField($store.clipCopyModel, id: "clips.copyModel").disabled(!store.aiPolishesCopy)
+                    }
+                    GridRow {
+                        Toggle("Look at frames", isOn: $store.aiLooksAtFrames).accessibilityIdentifier("clips.aiVision")
+                        modelField($store.clipVisionModel, id: "clips.visionModel").disabled(!store.aiLooksAtFrames)
+                    }
+                }
+                if store.aiLooksAtFrames {
+                    Stepper("Up to \(store.visionFrameBudget) frames", value: $store.visionFrameBudget, in: ClipVisionAI.budgetRange, step: 20).accessibilityIdentifier("clips.visionFrames")
+                }
+                if store.openRouterConnected {
+                    HStack {
+                        Button("Ask AI again", action: store.repickWithAI).buttonStyle(.secondary).disabled(store.streamTranscript == nil || store.isPickingWithAI)
+                        Spacer()
+                        Button("Disconnect OpenRouter") { do { try store.removeOpenRouterKey() } catch { store.error = error.localizedDescription } }.buttonStyle(.quiet)
+                    }
+                }
+                Text(store.aiLooksAtFrames
+                     ? "Sends the transcript, loudness and motion timings, and small still frames (768 px) to OpenRouter and each model’s provider. Audio never leaves this Mac. Uses your OpenRouter credits."
+                     : "Sends the transcript text and loudness/motion timings to OpenRouter and the model's provider. Video and audio never leave this Mac. Uses your OpenRouter credits.")
+                    .font(.system(size: 11)).foregroundStyle(Studio.muted).fixedSize(horizontal: false, vertical: true)
+            }
+        }.font(.system(size: 12))
+    }
+    /// An OpenRouter model ID, such as google/gemini-2.5-flash.
+    private func modelField(_ value: Binding<String>, id: String) -> some View {
+        TextField("Model ID", text: value).textFieldStyle(.roundedBorder).font(.system(size: 11, design: .monospaced)).accessibilityIdentifier(id)
     }
 }
 
@@ -91,16 +160,8 @@ private struct AdvancedScanSettings: View {
                     number("Join moments closer than (s)", value: $store.clipSettings.encounterGap, id: "clips.gap")
                     number("Longest clip (s)", value: $store.clipSettings.maxDuration, id: "clips.maximum")
                     Stepper("Up to \(store.clipSettings.maxClips) moments", value: $store.clipSettings.maxClips, in: 1...100)
-                    Button("Motion and HUD areas…") { showRegions = true }.buttonStyle(.secondary).accessibilityIdentifier("clips.regions")
-                    Text("Changing the sample rate or areas checks the video again. Other settings apply instantly.").foregroundStyle(Studio.muted)
-                    Divider()
-                    SectionLabel("Game HUD text (optional)")
-                    Text("Reads the elimination feed with macOS text recognition, on this Mac. Enter your exact on-screen name and check the HUD area first.").foregroundStyle(Studio.muted)
-                    Toggle("Read elimination feed", isOn: $store.clipSettings.useOCR).accessibilityIdentifier("clips.ocr")
-                    TextField("Player names, comma separated", text: $store.clipSettings.aliases).textFieldStyle(.roundedBorder).accessibilityIdentifier("clips.aliases")
-                    Stepper("Minimum HUD matches: \(store.clipSettings.minimumKills)", value: $store.clipSettings.minimumKills, in: 1...10)
-                    if !store.clipSettings.game.hasFeedPreset { Text("This game has no verified feed preset. Set the HUD area on a visible elimination feed; Tarkov may have no suitable feed.").foregroundStyle(Studio.muted) }
-                    Toggle("I checked the HUD area on this recording", isOn: $store.clipSettings.hudCalibrated).accessibilityIdentifier("clips.calibrated")
+                    Button("Motion area…") { showRegions = true }.buttonStyle(.secondary).accessibilityIdentifier("clips.regions")
+                    Text("Changing the sample rate or area checks the video again. Other settings apply instantly.").foregroundStyle(Studio.muted)
                     Text(store.clipMessage).foregroundStyle(Studio.muted).accessibilityIdentifier("detection.status")
                 }.font(.system(size: 11))
         }
@@ -119,18 +180,15 @@ struct RegionCalibrationSheet: View {
     @State private var loadError: String?
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Motion and HUD areas").font(Studio.title(20))
-            Text("Keep facecam, chat and animated overlays out of the Motion box. Put the HUD box around the elimination feed.").font(.system(size: 12)).foregroundStyle(Studio.muted)
+            Text("Motion area").font(Studio.title(20))
+            Text("Keep facecam, chat and animated overlays out of the Motion box.").font(.system(size: 12)).foregroundStyle(Studio.muted)
             RegionEditor(image: image, boxes: [
-                RegionBox(id: "Motion", color: Studio.series, region: $store.clipSettings.motionRegion),
-                RegionBox(id: "HUD", color: Studio.accent, region: $store.clipSettings.hud)
-                // HUD usually sits inside the motion area, so it draws last to stay draggable.
+                RegionBox(id: "Motion", color: Studio.series, region: $store.clipSettings.motionRegion)
             ]).frame(width: 760, height: 428)
             if let loadError { Text(loadError).foregroundStyle(Studio.danger) }
             Slider(value: $time, in: 0...max(0.01, media.duration - 0.1)).accessibilityIdentifier("clips.regionTime")
             Text("Source \(clockTime(time))").font(.system(size: 11)).foregroundStyle(Studio.muted)
             HStack {
-                Toggle("HUD checked on this recording", isOn: $store.clipSettings.hudCalibrated)
                 Spacer(); Button("Done") { dismiss() }.buttonStyle(.primary).keyboardShortcut(.cancelAction).accessibilityIdentifier("regions.done")
             }
         }.padding(24).background(Studio.base).task(id: time) {

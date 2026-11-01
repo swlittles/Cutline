@@ -16,7 +16,7 @@ Preview, automatic candidate preview, timeline export and batch export use the s
 
 ## Local creator settings
 
-Branding is stored in `creator-profile.json` under the app's local Application Support directory, with owner-only file permissions. Dev and release builds have separate directories. Creator settings never enter project JSON, source code or release configuration. The profile holds the Kick and Twitch usernames, the chosen badge and its placement. Settings can save without a username, but short exports require one for the chosen badge. Player aliases are user-entered and saved in the local per-game scan profiles. API credentials use Keychain.
+Branding is stored in `creator-profile.json` under the app's local Application Support directory, with owner-only file permissions. Dev and release builds have separate directories. Creator settings never enter project JSON, source code or release configuration. The profile holds the Kick and Twitch usernames, the chosen badge and its placement. Settings can save without a username, but short exports require one for the chosen badge. API credentials use Keychain.
 
 Project documents and generated scan reports are user content: they retain media references, edits, hooks and the scan settings used. Review those documents before sharing. Exported videos intentionally include the configured branding. Opening a project on another Mac uses that Mac's creator profile.
 
@@ -24,4 +24,4 @@ Project documents and generated scan reports are user content: they retain media
 
 YouTube Video preserves a 16:9 canvas without the short-specific stack, branding or hook requirements. Audio analysis and export tracks are independently selectable; choose the audience mix for output and an isolated track for analysis when available. Do not combine a full audience mix with a duplicate microphone track.
 
-Automatic clipping uses local audio measurements, frame sampling and optional macOS OCR without paid API calls. Captions use separately installed local transcription tools. Remote AI is separately opt-in. Automatic camera detection, loudness normalization and word-level caption styling remain incomplete. Review selected ranges and tighten setup/payoff before posting.
+Automatic clipping uses local audio measurements, frame sampling and a local transcript without paid API calls. Remote AI picks are opt-in and send only transcript text and signal timings. Automatic camera detection, loudness normalization and word-level caption styling remain incomplete. Review selected ranges and tighten setup/payoff before posting.

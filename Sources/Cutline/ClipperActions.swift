@@ -101,7 +101,8 @@ extension EditorStore {
     /// scan runs while the user checks framing and audio.
     func chooseVOD(_ id: UUID) {
         guard let media = project.media.first(where: { $0.id == id }) else { return }
-        if clipMediaID != id || clipAnalysis?.media.sameSource(as: media) != true {
+        let changed = clipMediaID != id
+        if changed || clipAnalysis?.media.sameSource(as: media) != true {
             clipJobID = UUID(); clipTask?.cancel(); isScanningClips = false; clipInflight = nil
             clipAnalysis = ClipAnalysisCache.load(for: media); clipReport = nil; focusedMoment = nil; clipOutput = nil
         }
@@ -109,7 +110,9 @@ extension EditorStore {
         if project.clipReview?.mediaID != id { commit { $0.clipReview = ClipReview(mediaID: id) } }
         if trackNames[id] == nil { Task { trackNames[id] = await AudioTrackNames.load(media.url); if clipMediaID == id { adoptRoutes() } } }
         adoptRoutes()
+        if changed || (streamTranscript == nil && !isListening) { loadSpeech() }
         beginAnalysis()
+        listenIfNeeded()
     }
     /// Detection, export and caption tracks follow the recording's audio roles.
     func adoptRoutes() {
@@ -128,13 +131,12 @@ extension EditorStore {
     func applyScenePreset(_ preset: ScenePreset) {
         guard let media = clipMedia, let index = project.media.firstIndex(where: { $0.id == media.id }) else { return }
         commit { preset.apply(to: &$0.media[index]) }
-        if clipSettings.game != preset.game { selectClipGame(preset.game) }
         clipSettings.motionRegion = preset.motionRegion
         adoptRoutes()
         UserDefaults.standard.set(preset.id.uuidString, forKey: "last-scene-preset")
     }
-    func saveScenePreset(named name: String, framing: ShortFraming, roles: [AudioRole], game: ClipGame) throws {
-        var preset = ScenePreset(name: name.trimmingCharacters(in: .whitespacesAndNewlines), framing: framing, audioRoles: roles, game: game, motionRegion: clipSettings.motionRegion)
+    func saveScenePreset(named name: String, framing: ShortFraming, roles: [AudioRole]) throws {
+        var preset = ScenePreset(name: name.trimmingCharacters(in: .whitespacesAndNewlines), framing: framing, audioRoles: roles, motionRegion: clipSettings.motionRegion)
         var presets = scenePresets
         if let index = presets.firstIndex(where: { $0.name.caseInsensitiveCompare(preset.name) == .orderedSame }) { preset.id = presets[index].id; presets[index] = preset }
         else { presets.append(preset) }
@@ -146,29 +148,23 @@ extension EditorStore {
         do { try ScenePresetStore.save(presets); scenePresets = presets } catch { self.error = error.localizedDescription }
     }
     /// Continue from setup: confirms crops, saves roles, branding and an optional preset.
-    @discardableResult func completeSetup(framing: ShortFraming, roles: [AudioRole], game: ClipGame, branding: ShortBranding?, presetName: String?) -> Bool {
+    @discardableResult func completeSetup(framing: ShortFraming, roles: [AudioRole], branding: ShortBranding?, presetName: String?) -> Bool {
         guard let media = clipMedia, let index = project.media.firstIndex(where: { $0.id == media.id }) else { return false }
         do {
             try framing.validate()
             if let branding { try branding.validate(); try saveCreatorProfile(branding) }
             try creatorProfile.validate()
             var confirmed = framing; confirmed.confirmed = true
-            if game != clipSettings.game { selectClipGame(game) }
             commit { $0.media[index].shortFraming = confirmed; $0.media[index].audioRoles = roles }
             adoptRoutes()
             if let name = presetName?.trimmingCharacters(in: .whitespacesAndNewlines), !name.isEmpty {
-                try saveScenePreset(named: name, framing: confirmed, roles: roles, game: game)
+                try saveScenePreset(named: name, framing: confirmed, roles: roles)
             }
             clipStep = .review
             beginAnalysis()
+            listenIfNeeded()
             return true
         } catch { self.error = error.localizedDescription; return false }
-    }
-    func selectClipGame(_ game: ClipGame) {
-        clipProfiles[clipSettings.game.rawValue] = clipSettings
-        var next = clipProfiles[game.rawValue] ?? .preset(game); next.hudCalibrated = false
-        next.audioTrack = clipSettings.audioTrack; next.outputAudioTrack = clipSettings.outputAudioTrack; next.outputAudioTracks = clipSettings.outputAudioTracks
-        clipSettings = next
     }
 }
 
@@ -177,13 +173,15 @@ extension EditorStore {
     func resetAutoClips() {
         clipJobID = UUID(); clipTask?.cancel(); clipExportTask?.cancel(); clipEvaluateTask?.cancel(); clipSettingsTask?.cancel(); clipCaptionTask?.cancel(); reviewPreviewTask?.cancel()
         isScanningClips = false; isExportingClips = false; isTranscribingClips = false; clipInflight = nil
-        clipAnalysis = nil; clipReport = nil; focusedMoment = nil; clipMediaID = nil; clipOutput = nil; clipSettings.hudCalibrated = false
+        clipAnalysis = nil; clipReport = nil; focusedMoment = nil; clipMediaID = nil; clipOutput = nil
         reviewPreviewProject = nil; reviewPreviewID = nil; reviewPlayer.replaceCurrentItem(with: nil); stopAudition()
+        listenTask?.cancel(); aiPickTask?.cancel(); isListening = false; isPickingWithAI = false
+        streamTranscript = nil; aiPicks = nil; screenNotes = []; listenMessage = ""; aiPickMessage = ""
     }
     /// Explicit request from the UI. Invalid settings are reported instead of silently skipped.
     func scanAutoClips() { beginAnalysis(explicit: true) }
     func persistClipProfiles() throws {
-        clipProfiles[clipSettings.game.rawValue] = clipSettings; clipProfiles["last"] = clipSettings
+        clipProfiles = ["last": clipSettings]
         let url = LocalTools.support.appendingPathComponent("autoclip-profiles.json")
         try FileManager.default.createDirectory(at: LocalTools.support, withIntermediateDirectories: true)
         try JSONEncoder().encode(clipProfiles).write(to: url, options: .atomic)
@@ -199,8 +197,9 @@ extension EditorStore {
         }
         do { try persistClipProfiles() } catch { self.error = error.localizedDescription; return }
         let key = ClipVisualKey(clipSettings)
-        if isScanningClips, let inflight = clipInflight, inflight.serves(key) { return }
+        // What's already measured is shown at once, even while a broader scan carries on.
         if let analysis = clipAnalysis, analysis.media.sameSource(as: media), analysis.covers(clipSettings) { evaluateMoments(); return }
+        if isScanningClips, let inflight = clipInflight, inflight.serves(key) { return }
         let settings = clipSettings, token = UUID(); clipJobID = token
         clipTask?.cancel()
         let existing = clipAnalysis?.media.sameSource(as: media) == true ? clipAnalysis : nil
@@ -227,7 +226,7 @@ extension EditorStore {
                 clipMessage = Task.isCancelled ? "Scan cancelled." : "Scan failed."
                 if !Task.isCancelled { self.error = error.localizedDescription }
             }
-            if clipJobID == token { isScanningClips = false; clipInflight = nil }
+            if clipJobID == token { isScanningClips = false; clipInflight = nil; pickWithAIIfNeeded() }
         }
     }
     func clipSettingsChanged() {
@@ -250,8 +249,8 @@ extension EditorStore {
     }
     func evaluateNow() async {
         guard let analysis = clipAnalysis, let media = clipMedia, analysis.media.sameSource(as: media), analysis.covers(clipSettings) else { return }
-        let settings = clipSettings, markers = momentMarkers(for: media)
-        let result = await Task.detached(priority: .userInitiated) { Result { try analysis.report(settings: settings, markers: markers) } }.value
+        let settings = clipSettings, markers = momentMarkers(for: media), picks = activeAIPicks
+        let result = await Task.detached(priority: .userInitiated) { Result { try analysis.report(settings: settings, markers: markers, picks: picks) } }.value
         guard !Task.isCancelled, clipSettings == settings, clipMedia?.sameSource(as: media) == true else { return }
         switch result {
         case .success(let report):
@@ -260,6 +259,7 @@ extension EditorStore {
             clipMessage = count == 0 ? "No moments stood out. Slide toward More, or add a moment you remember." : "Found \(count) \(count == 1 ? "moment" : "moments") to review."
             ensureFocus()
             if clipStep == .review { refreshReviewPreview() }
+            pickWithAIIfNeeded()
         case .failure(let error):
             clipReport = nil; clipMessage = error.localizedDescription
         }
@@ -280,7 +280,7 @@ extension EditorStore {
         commit { if $0.autoClipHooks == nil { $0.autoClipHooks = [:] }; $0.autoClipHooks?[id] = text }
     }
     func decide(_ id: String, _ decision: ClipDecision) { updateReview { $0.decide(id, decision) } }
-    func suggestedHook(_ candidate: AutoClipCandidate) -> String { HookIdeas.suggestions(for: candidate, game: clipSettings.game).first ?? "Wait for it…" }
+    func suggestedHook(_ candidate: AutoClipCandidate) -> String { HookIdeas.suggestions(for: candidate).first ?? "Wait for it…" }
     /// A kept clip always ships with a hook. Keeping without one uses the top suggestion,
     /// in the same undo step, so Keep never refuses.
     @discardableResult func keepFocused() -> Bool {
@@ -466,6 +466,12 @@ extension EditorStore {
         guard !isTranscribingClips, let media = clipMedia else { return false }
         let pending = pendingCaptionClips
         guard !pending.isEmpty else { return true }
+        // The stream was already transcribed: cut each clip's captions from it.
+        if let transcript = streamTranscript, transcript.audioTrack == routes.speech {
+            updateReview { review in for clip in pending { review.captions[clip.id] = transcript.captions(from: clip.start, to: clip.end) } }
+            clipMessage = "Captions ready. Check the wording before you export."
+            return true
+        }
         let engine = captionEngine
         guard engine == .whisper || engine == .apple else { error = "Captions aren’t available on this Mac yet."; return false }
         let model = speechModel, language = transcriptionLanguage, vocabulary = transcriptionVocabulary, track = routes.speech, epoch = projectEpoch

@@ -16,10 +16,10 @@ struct AIPanel: View {
                         SecureField("OpenRouter API key", text: $key).textFieldStyle(.roundedBorder)
                         HStack {
                             Button("Save to Keychain") {
-                                do { try OpenRouterKeychain.save(key); key = ""; keySaved = true; configure = false }
+                                do { try store.saveOpenRouterKey(key); key = ""; keySaved = true; configure = false }
                                 catch { store.error = error.localizedDescription }
                             }.disabled(key.isEmpty)
-                            if keySaved { Button("Remove") { do { try OpenRouterKeychain.remove(); keySaved = false } catch { store.error = error.localizedDescription } } }
+                            if keySaved { Button("Remove") { do { try store.removeOpenRouterKey(); keySaved = false } catch { store.error = error.localizedDescription } } }
                         }
                         TextField("Model ID", text: $store.aiModel).textFieldStyle(.roundedBorder)
                         Text("Use a model that supports structured outputs. Your key is stored in macOS Keychain, never in project files.").foregroundStyle(Studio.muted)

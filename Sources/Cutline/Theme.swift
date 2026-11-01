@@ -162,12 +162,17 @@ struct StatusBar: View {
     let text: String
     var busy = false
     var trailing: String? = AppEnvironment.currentVersionLabel
+    /// Transcript text, and maybe still frames, go to OpenRouter when AI picks moments.
+    var sharesTranscript = false
+    var sharesFrames = false
     var body: some View {
         HStack(spacing: 8) {
             Circle().fill(busy ? Studio.warning : Studio.success).frame(width: 6, height: 6)
             Text(text).lineLimit(1).accessibilityIdentifier("editor.status")
             Spacer()
-            Label("Everything stays on this Mac", systemImage: "lock").labelStyle(.titleAndIcon)
+            if sharesFrames { Label("Transcript and still frames go to OpenRouter; audio stays on this Mac", systemImage: "network").labelStyle(.titleAndIcon) }
+            else if sharesTranscript { Label("Transcript text goes to OpenRouter; video and audio stay on this Mac", systemImage: "network").labelStyle(.titleAndIcon) }
+            else { Label("Everything stays on this Mac", systemImage: "lock").labelStyle(.titleAndIcon) }
             if let trailing { Text("·"); Text(trailing) }
         }.font(.system(size: 10.5)).foregroundStyle(Studio.muted).padding(.horizontal, 18).frame(height: 28).background(Studio.panel)
             .overlay(alignment: .top) { Rectangle().fill(Studio.line).frame(height: 1) }

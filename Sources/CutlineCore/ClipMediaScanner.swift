@@ -26,17 +26,16 @@ public enum ClipMediaScanner {
             evidence += AutoClipRules.audioEvents(audio, settings: settings)
             warnings.append("Track \(settings.audioTrack + 1) is measured independently. Loud game audio, music, and voice chat can all trigger it; select an isolated mic track for reactions.")
         }
-        var frames = 0, ocrReads = 0
-        if settings.visionEnabled || settings.useOCR {
+        var frames = 0
+        if settings.visionEnabled {
             let videoEnd = try await ClipAnalyzer.videoEnd(asset, duration: duration)
             let generator = AVAssetImageGenerator(asset: asset)
             generator.appliesPreferredTrackTransform = true
-            generator.maximumSize = CGSize(width: settings.useOCR ? 1920 : 320, height: settings.useOCR ? 1080 : 180)
+            generator.maximumSize = CGSize(width: 320, height: 180)
             generator.requestedTimeToleranceBefore = CMTime(seconds: 0.1, preferredTimescale: 600)
             generator.requestedTimeToleranceAfter = CMTime(seconds: 0.1, preferredTimescale: 600)
             defer { generator.cancelAllCGImageGeneration() }
-            var previous: [UInt8]?, tracker = ClipFeedTracker(), lastTime = -1.0
-            var previousHUD: [UInt8]?, lastOCR = -Double.infinity, reads: [HUDRead] = []
+            var previous: [UInt8]?, lastTime = -1.0
             let count = Int(ceil(videoEnd * settings.sampleFPS))
             for i in 0..<count {
                 try Task.checkCancellation()
@@ -47,31 +46,18 @@ public enum ClipMediaScanner {
                 if time <= lastTime { continue }
                 lastTime = time; frames += 1
                 try autoreleasepool {
-                    if settings.visionEnabled {
-                        let gray = try grayscale(result.image, region: settings.motionRegion)
-                        if let previous { motion.append(difference(previous, gray, time: time)) }
-                        previous = gray
-                    }
-                    if settings.useOCR {
-                        guard let crop = crop(result.image, region: settings.hud) else { throw EditError.invalid("Cannot crop the HUD region.") }
-                        let pixels = try grayscale(crop, region: ClipScanRegion())
-                        let changed = previousHUD.map { difference($0, pixels, time: time).change > 0.008 } ?? true
-                        if changed || time - lastOCR >= 1 {
-                            reads = try ClipHUD.read(crop, aliases: settings.playerNames)
-                            previousHUD = pixels; lastOCR = time; ocrReads += 1
-                        }
-                        evidence += tracker.update(at: time, reads: reads)
-                    }
+                    let gray = try grayscale(result.image, region: settings.motionRegion)
+                    if let previous { motion.append(difference(previous, gray, time: time)) }
+                    previous = gray
                 }
                 if i % max(1, Int(settings.sampleFPS)) == 0 { progress(ClipScanProgress(0.35 + 0.6 * Double(i + 1) / Double(count), "Sampling video \(timecode(time)) / \(timecode(duration))…")) }
             }
             evidence += AutoClipRules.motionEvents(motion, settings: settings)
         }
         try Task.checkCancellation()
-        if settings.useOCR { warnings.append("HUD OCR assumes the configured player and region are visible. Spectator views, assist icons, name collisions, HUD changes, or missed text can produce errors. No game-specific accuracy has been established on real footage.") }
         let candidates = AutoClipRules.candidates(evidence: evidence, duration: duration, settings: settings)
         progress(ClipScanProgress(1, "Found \(candidates.count) \(candidates.count == 1 ? "clip" : "clips") to review."))
-        return AutoClipReport(media: media, settings: settings, candidates: candidates, evidence: evidence.sorted { $0.time < $1.time }, audioSamples: audio, motionSamples: motion, warnings: warnings, sampledFrames: frames, ocrReads: ocrReads)
+        return AutoClipReport(media: media, settings: settings, candidates: candidates, evidence: evidence.sorted { $0.time < $1.time }, audioSamples: audio, motionSamples: motion, warnings: warnings, sampledFrames: frames)
     }
 
     static func readAudio(asset: AVAsset, track: AVAssetTrack, duration: Double, progress: (Double) -> Void) async throws -> [ClipAudioSample] {

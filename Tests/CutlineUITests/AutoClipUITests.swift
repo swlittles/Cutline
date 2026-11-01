@@ -43,7 +43,7 @@ extension EditorUITests {
         app.buttons["import.choose"].click(); chooseFile(fixture.appendingPathComponent("autoclip.mp4"))
         waitEnabled(app.buttons["step.continue"]); app.buttons["step.continue"].click()
 
-        // Layout: crops on a real frame; sound and game have defaults and stay folded away.
+        // Layout: crops on a real frame; sound has defaults and stays folded away.
         XCTAssertTrue(app.descendants(matching: .any)["setup.frame"].firstMatch.waitForExistence(timeout: 5))
         tapInPanel(app.buttons["setup.changeSound"])
         segment("setup.role.0", "My voice"); segment("setup.role.1", "Not used")
@@ -90,7 +90,7 @@ extension EditorUITests {
 
     func testRememberedLayoutSkipsSetup() throws {
         try CreatorProfileStore.save(ShortBranding(kick: "player"), to: root)
-        let preset = ScenePreset(name: "Saved layout", framing: ShortFraming(), audioRoles: [.mic, .ignore], game: .cs2, motionRegion: AutoClipSettings().motionRegion)
+        let preset = ScenePreset(name: "Saved layout", framing: ShortFraming(), audioRoles: [.mic, .ignore], motionRegion: AutoClipSettings().motionRegion)
         try ScenePresetStore.save([preset], to: root)
         launch(project: false, home: true)
         app.buttons["home.clip"].click()

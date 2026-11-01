@@ -1,14 +1,13 @@
 import SwiftUI
 import CutlineCore
 
-/// Step 2: where the facecam and gameplay are, checked on the real recording. Sound and game
-/// have sensible defaults and stay folded away. The layout is remembered for the next stream.
+/// Step 2: where the facecam and gameplay are, checked on the real recording. Sound has
+/// sensible defaults and stays folded away. The layout is remembered for the next stream.
 struct SetupStepView: View {
     @EnvironmentObject var store: EditorStore
     @State private var framing = ShortFraming()
     @State private var roles: [AudioRole] = []
     @State private var rolesTouched = false
-    @State private var game = ClipGame.generic
     @State private var branding = ShortBranding()
     @State private var editBranding = false
     @State private var remember = true
@@ -38,14 +37,6 @@ struct SetupStepView: View {
                         Toggle("Show the whole game area (adds black bars). Good for games with a lot on screen.", isOn: $framing.containGameplay)
                             .font(.system(size: 12)).accessibilityIdentifier("setup.containGameplay")
                         soundCard
-                        Card(title: "Game · optional") {
-                            HStack {
-                                Picker("Game", selection: $game) { ForEach(ClipGame.allCases) { Text($0.label).tag($0) } }
-                                    .labelsHidden().fixedSize().accessibilityIdentifier("setup.game")
-                                Spacer()
-                            }
-                            Text("Helps Cutline decide how much to show before and after each moment.").font(.system(size: 11)).foregroundStyle(Studio.muted)
-                        }
                     }
                     VStack(alignment: .leading, spacing: 16) {
                         SectionLabel("Preview")
@@ -63,7 +54,7 @@ struct SetupStepView: View {
             }.accessibilityIdentifier("setup.scroll")
             StepFooter(back: .importVOD, title: "Looks good – pick clips", enabled: store.clipMedia != nil && blocker == nil, hint: blocker, identifier: "setup.continue") {
                 let name = presetName.trimmingCharacters(in: .whitespacesAndNewlines)
-                store.completeSetup(framing: framing, roles: roles, game: game, branding: branding == store.creatorProfile ? nil : branding, presetName: remember ? (name.isEmpty ? "My layout" : name) : nil)
+                store.completeSetup(framing: framing, roles: roles, branding: branding == store.creatorProfile ? nil : branding, presetName: remember ? (name.isEmpty ? "My layout" : name) : nil)
             }
         }
         .onAppear(perform: load)
@@ -143,7 +134,6 @@ struct SetupStepView: View {
         guard let media = store.clipMedia else { return }
         framing = media.shortFraming ?? store.lastScenePreset?.framing ?? ShortFraming()
         roles = store.audioRoles; rolesTouched = media.audioRoles != nil
-        game = store.clipSettings.game
         branding = store.creatorProfile; editBranding = false
         presetName = store.lastScenePreset?.name ?? "My layout"
         time = min(media.duration - 0.1, max(0, media.duration * 0.2)); image = nil

@@ -35,16 +35,15 @@ public struct AudioRoutes: Equatable, Sendable {
     }
 }
 
-/// A saved OBS layout: crops, audio roles, game and activity area, reused across recordings.
+/// A saved OBS layout: crops, audio roles and activity area, reused across recordings.
 public struct ScenePreset: Codable, Identifiable, Equatable, Sendable {
     public var id = UUID()
     public var name: String
     public var framing: ShortFraming
     public var audioRoles: [AudioRole]
-    public var game: ClipGame
     public var motionRegion: ClipScanRegion
-    public init(name: String, framing: ShortFraming, audioRoles: [AudioRole], game: ClipGame, motionRegion: ClipScanRegion) {
-        self.name = name; self.framing = framing; self.audioRoles = audioRoles; self.game = game; self.motionRegion = motionRegion
+    public init(name: String, framing: ShortFraming, audioRoles: [AudioRole], motionRegion: ClipScanRegion) {
+        self.name = name; self.framing = framing; self.audioRoles = audioRoles; self.motionRegion = motionRegion
     }
     public func validate() throws {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -169,14 +168,13 @@ public extension AutoClipSettings {
 
 /// Starting points for a hook. The user always chooses or edits the text that ships.
 public enum HookIdeas {
-    public static func suggestions(for candidate: AutoClipCandidate, game: ClipGame) -> [String] {
-        let kills = candidate.evidence.filter { $0.signal == .elimination }.count
-        let seconds = Int((candidate.end - candidate.start).rounded())
+    public static func suggestions(for candidate: AutoClipCandidate) -> [String] {
         var ideas: [String] = []
-        if kills >= 2 { ideas.append("\(kills) kills in \(seconds) seconds") }
+        if let hook = candidate.hook, !hook.isEmpty { ideas.append(hook) }
+        ideas += (candidate.hookIdeas ?? []).filter { !ideas.contains($0) }
         if candidate.evidence.contains(where: { $0.signal == .audio && $0.strength > 0.6 }) { ideas.append("I was NOT ready for this") }
-        ideas += ["Wait for it…", "Chat, did you see that?", "This is why I play \(game == .generic ? "this game" : game.label)", "Would you have made this play?"]
-        return Array(ideas.prefix(5))
+        ideas += ["Wait for it…", "Chat, did you see that?", "Would you have made this play?", "This is why I stream"]
+        return Array(ideas.prefix(6))
     }
 }
 

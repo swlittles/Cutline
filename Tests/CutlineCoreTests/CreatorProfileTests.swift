@@ -3,10 +3,9 @@ import CoreImage
 @testable import CutlineCore
 
 final class CreatorProfileTests: XCTestCase {
-    func testFreshInstallAndGameProfilesHaveNoIdentity() throws {
+    func testFreshInstallHasNoIdentity() throws {
         let root = try Fixtures.temporary(); defer { try? FileManager.default.removeItem(at: root) }
         XCTAssertEqual(try CreatorProfileStore.load(from: root), ShortBranding())
-        for game in ClipGame.allCases { XCTAssertTrue(AutoClipSettings.preset(game).aliases.isEmpty) }
         XCTAssertThrowsError(try ShortBranding().validate())
     }
     func testLocalProfileRoundTripReplacementAndPermissions() throws {

@@ -8,21 +8,13 @@ public struct ClipVisualKey: Codable, Hashable, Sendable {
     public var motion: Bool
     public var motionRegion: ClipScanRegion
     public var sampleFPS: Double
-    public var ocr: Bool
-    public var hud: ClipScanRegion
-    public var playerNames: [String]
     public init(_ settings: AutoClipSettings) {
         motion = settings.visionEnabled; motionRegion = settings.motionRegion; sampleFPS = settings.sampleFPS
-        ocr = settings.useOCR; hud = settings.useOCR ? settings.hud : ClipScanRegion(); playerNames = settings.useOCR ? settings.playerNames : []
     }
-    public var needed: Bool { motion || ocr }
-    /// A broader sampling pass (for example motion plus OCR) still serves a narrower request.
+    public var needed: Bool { motion }
     public func serves(_ other: ClipVisualKey) -> Bool {
         guard other.needed else { return true }
-        guard motionRegion == other.motionRegion, sampleFPS == other.sampleFPS else { return false }
-        if other.motion && !motion { return false }
-        if other.ocr && !(ocr && hud == other.hud && playerNames == other.playerNames) { return false }
-        return true
+        return motion && motionRegion == other.motionRegion && sampleFPS == other.sampleFPS
     }
 }
 
@@ -33,9 +25,7 @@ public struct ClipAnalysis: Codable, Equatable, Sendable {
     public var audioTracks: [Int: [ClipAudioSample]]?
     public var visual: ClipVisualKey?
     public var motionSamples: [ClipMotionSample] = []
-    public var hudEvidence: [ClipEvidence] = []
     public var sampledFrames = 0
-    public var ocrReads = 0
     public init(media: MediaItem) { self.media = media }
 
     public var audioReady: Bool { audioTracks != nil }
@@ -45,7 +35,7 @@ public struct ClipAnalysis: Codable, Equatable, Sendable {
         return !key.needed || (visual?.serves(key) ?? false)
     }
     /// Evaluation is cheap: rules run over retained measurements only.
-    public func report(settings: AutoClipSettings, markers: [ClipEvidence] = []) throws -> AutoClipReport {
+    public func report(settings: AutoClipSettings, markers: [ClipEvidence] = [], picks: [AIClipPick] = []) throws -> AutoClipReport {
         try settings.validate()
         guard covers(settings) else { throw EditError.invalid("These settings need a new scan of the recording.") }
         var evidence = markers.filter { $0.signal == .marker && $0.time.isFinite && $0.time >= 0 && $0.time < media.duration }
@@ -57,12 +47,8 @@ public struct ClipAnalysis: Codable, Equatable, Sendable {
             warnings.append("Track \(settings.audioTrack + 1) is measured independently. Loud game audio, music, and voice chat can all trigger it; select an isolated mic track for reactions.")
         }
         if settings.visionEnabled { evidence += AutoClipRules.motionEvents(motionSamples, settings: settings) }
-        if settings.useOCR {
-            evidence += hudEvidence
-            warnings.append("HUD OCR assumes the configured player and region are visible. Spectator views, assist icons, name collisions, HUD changes, or missed text can produce errors. No game-specific accuracy has been established on real footage.")
-        }
-        let candidates = AutoClipRules.candidates(evidence: evidence, duration: media.duration, settings: settings)
-        return AutoClipReport(media: media, settings: settings, candidates: candidates, evidence: evidence.sorted { $0.time < $1.time }, audioSamples: audio, motionSamples: settings.visionEnabled ? motionSamples : [], warnings: warnings, sampledFrames: settings.visionEnabled || settings.useOCR ? sampledFrames : 0, ocrReads: settings.useOCR ? ocrReads : 0)
+        let candidates = AutoClipRules.candidates(evidence: evidence, duration: media.duration, settings: settings, picks: picks)
+        return AutoClipReport(media: media, settings: settings, candidates: candidates, evidence: evidence.sorted { $0.time < $1.time }, audioSamples: audio, motionSamples: settings.visionEnabled ? motionSamples : [], warnings: warnings, sampledFrames: settings.visionEnabled ? sampledFrames : 0)
     }
 }
 
@@ -94,8 +80,7 @@ public enum ClipAnalyzer {
         if let audio = try await audioPass { result.audioTracks = audio; audioReady(audio) }
         else if result.audioTracks == nil && tracks.isEmpty { result.audioTracks = [:] }
         if let visual = try await visualPass {
-            result.visual = key; result.motionSamples = visual.motion; result.hudEvidence = visual.hud
-            result.sampledFrames = visual.frames; result.ocrReads = visual.reads
+            result.visual = key; result.motionSamples = visual.motion; result.sampledFrames = visual.frames
         }
         try Task.checkCancellation()
         progress(ClipScanProgress(1, "Almost done…"))
@@ -106,7 +91,7 @@ public enum ClipAnalyzer {
         let audio: Double, visual: Double
         init(audio a: Bool, visual v: Bool) { audio = a ? (v ? 0.35 : 1) : 0; visual = v ? 1 - audio : 0 }
     }
-    struct VisualResult: Sendable { var motion: [ClipMotionSample]; var hud: [ClipEvidence]; var frames: Int; var reads: Int }
+    struct VisualResult: Sendable { var motion: [ClipMotionSample]; var frames: Int }
 
     /// One reader, one pass over the file, interleaved across outputs so no track's buffers pile up.
     static func readAllAudio(asset: AVAsset, tracks: [AVAssetTrack], duration: Double, progress: (Double) -> Void) async throws -> [Int: [ClipAudioSample]] {
@@ -191,13 +176,12 @@ public enum ClipAnalyzer {
         let videoEnd = try await ClipAnalyzer.videoEnd(asset, duration: duration)
         let generator = AVAssetImageGenerator(asset: asset)
         generator.appliesPreferredTrackTransform = true
-        generator.maximumSize = CGSize(width: key.ocr ? 1920 : 320, height: key.ocr ? 1080 : 180)
+        generator.maximumSize = CGSize(width: 320, height: 180)
         generator.requestedTimeToleranceBefore = CMTime(seconds: 0.1, preferredTimescale: 600)
         generator.requestedTimeToleranceAfter = CMTime(seconds: 0.1, preferredTimescale: 600)
         defer { generator.cancelAllCGImageGeneration() }
-        var result = VisualResult(motion: [], hud: [], frames: 0, reads: 0)
-        var previous: [UInt8]?, tracker = ClipFeedTracker(), lastTime = -1.0
-        var previousHUD: [UInt8]?, lastOCR = -Double.infinity, reads: [HUDRead] = []
+        var result = VisualResult(motion: [], frames: 0)
+        var previous: [UInt8]?, lastTime = -1.0
         let count = Int(ceil(videoEnd * key.sampleFPS))
         for i in 0..<count {
             try Task.checkCancellation()
@@ -208,21 +192,9 @@ public enum ClipAnalyzer {
             if time <= lastTime { continue }
             lastTime = time; result.frames += 1
             try autoreleasepool {
-                if key.motion {
-                    let gray = try ClipMediaScanner.grayscale(image.image, region: key.motionRegion)
-                    if let previous { result.motion.append(ClipMediaScanner.difference(previous, gray, time: time)) }
-                    previous = gray
-                }
-                if key.ocr {
-                    guard let crop = ClipMediaScanner.crop(image.image, region: key.hud) else { throw EditError.invalid("Cannot crop the HUD region.") }
-                    let pixels = try ClipMediaScanner.grayscale(crop, region: ClipScanRegion())
-                    let changed = previousHUD.map { ClipMediaScanner.difference($0, pixels, time: time).change > 0.008 } ?? true
-                    if changed || time - lastOCR >= 1 {
-                        reads = try ClipHUD.read(crop, aliases: key.playerNames)
-                        previousHUD = pixels; lastOCR = time; result.reads += 1
-                    }
-                    result.hud += tracker.update(at: time, reads: reads)
-                }
+                let gray = try ClipMediaScanner.grayscale(image.image, region: key.motionRegion)
+                if let previous { result.motion.append(ClipMediaScanner.difference(previous, gray, time: time)) }
+                previous = gray
             }
             if i % max(1, Int(key.sampleFPS)) == 0 { progress(Double(i + 1) / Double(count), time) }
         }
