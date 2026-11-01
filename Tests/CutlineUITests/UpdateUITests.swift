@@ -2,6 +2,7 @@ import XCTest
 extension EditorUITests {
     func testDevelopmentUpdatesSettingsAndMenuStayDisabled() {
         launch(project: false)
+        XCTAssertTrue(app.descendants(matching: .any)["brand.development"].waitForExistence(timeout: 5), "Development builds show a DEV label")
         let applicationMenu = app.menuBars.menuBarItems.element(boundBy: 1)
         applicationMenu.click()
         XCTAssertFalse(app.menuItems["Check for Updates…"].isEnabled)

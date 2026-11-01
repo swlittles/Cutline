@@ -75,7 +75,7 @@ struct UpdatesSettingsView: View {
             Section("Your channel") { CreatorProfileView() }
             Section("AI agents") { AgentSettingsView() }
             Section("Updates") {
-                Text("\(AppEnvironment.current.name) \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "")").foregroundStyle(Studio.muted)
+                Text(AppEnvironment.currentVersionLabel).foregroundStyle(Studio.muted)
                 if updates.enabled {
                     Toggle("Automatically check for updates", isOn: Binding(get: { updates.state.automaticChecks }, set: updates.setAutomaticChecks)).accessibilityIdentifier("updates.automatic")
                     Text("Updates come from Cutline’s GitHub releases. You choose when to download and install them.").font(.system(size: 11)).foregroundStyle(Studio.muted)

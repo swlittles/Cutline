@@ -8,6 +8,12 @@ public struct AppEnvironment: Equatable, Sendable {
     public var bundleIdentifier: String { isDevelopment ? "studio.cutline.editor.dev" : "studio.cutline.editor" }
     public var credentialService: String { isDevelopment ? "studio.cutline.dev.openrouter" : "studio.cutline.openrouter" }
     public func supportURL(root: URL) -> URL { root.appendingPathComponent(name, isDirectory: true) }
+    /// "Cutline 0.5.1" or "Cutline Dev 0.5.1". A build without a version says it is a local build.
+    public func versionLabel(_ version: String?) -> String {
+        guard let version, !version.isEmpty else { return "\(name) (local build)" }
+        return "\(name) \(version)"
+    }
+    public static var currentVersionLabel: String { current.versionLabel(hostBundle.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String) }
     public static let current = AppEnvironment(bundleIdentifier: hostBundle.bundleIdentifier)
     /// The app this code ships in. The agent connector sits in the app's Contents/MacOS, where
     /// `Bundle.main` is just the executable's folder, so it shares the app's settings through this.

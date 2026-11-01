@@ -19,8 +19,7 @@ struct EditorView: View {
                 InspectorView().frame(width: 280)
             }.frame(maxHeight: .infinity)
             TimelineView().frame(height: advanced ? 320 : 250)
-            StatusBar(text: store.status, busy: store.isExporting || store.isBuilding,
-                      trailing: "\(AppEnvironment.current.name) \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "Development")")
+            StatusBar(text: store.status, busy: store.isExporting || store.isBuilding)
         }.background(Studio.base)
     }
     private var header: some View {

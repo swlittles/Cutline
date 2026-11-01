@@ -56,7 +56,10 @@ fi
 # The agent connector (Model Context Protocol server) that Claude Code and Codex launch.
 codesign "${SIGN_ARGS[@]}" --identifier "$BUNDLE_ID.mcp" "$APP/Contents/MacOS/cutline-mcp"
 python3 scripts/make-plist.py "$APP/Contents/Info.plist" "$APP_NAME" "$BUNDLE_ID" "$VERSION" "$BUILD_NUMBER" "${CUTLINE_RELEASE_CHANNEL:-stable}"
-cp Config/AppIcon.icns LICENSE docs/THIRD_PARTY_NOTICES.txt docs/Sparkle-LICENSE.txt "$APP/Contents/Resources/"
+cp LICENSE docs/THIRD_PARTY_NOTICES.txt docs/Sparkle-LICENSE.txt "$APP/Contents/Resources/"
+# Development builds carry a DEV badge on their icon so they're never mistaken for the release app.
+if [ "$VARIANT" = development ]; then swift scripts/make-icon.swift --development --output "$APP/Contents/Resources/AppIcon.icns" >/dev/null
+else cp Config/AppIcon.icns "$APP/Contents/Resources/"; fi
 codesign "${SIGN_ARGS[@]}" "$APP"
 codesign --verify --deep --strict "$APP"
 # Moving whole bundles preserves a running previous executable; never overwrite its inode.

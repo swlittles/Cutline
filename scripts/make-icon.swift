@@ -1,6 +1,16 @@
 // Draws the Cutline app icon (a vertical short cut in two on a terracotta tile) and writes
 // Config/AppIcon.icns. Run from the repository root: swift scripts/make-icon.swift
+// Options: --development adds the DEV badge local builds carry; --output <file.icns> writes elsewhere;
+// any other argument is a path for a 1024 px PNG preview.
 import AppKit
+
+var arguments = Array(CommandLine.arguments.dropFirst())
+let development = arguments.contains("--development")
+arguments.removeAll { $0 == "--development" }
+var output = "Config/AppIcon.icns"
+if let index = arguments.firstIndex(of: "--output"), arguments.indices.contains(index + 1) {
+    output = arguments[index + 1]; arguments.removeSubrange(index...index + 1)
+}
 
 func color(_ hex: UInt32, _ alpha: CGFloat = 1) -> CGColor {
     CGColor(srgbRed: CGFloat(hex >> 16 & 0xFF) / 255, green: CGFloat(hex >> 8 & 0xFF) / 255, blue: CGFloat(hex & 0xFF) / 255, alpha: alpha)
@@ -50,6 +60,20 @@ func draw(_ size: Int) -> Data {
     play.move(to: CGPoint(x: 478, y: 446)); play.addLine(to: CGPoint(x: 478, y: 318)); play.addLine(to: CGPoint(x: 584, y: 382)); play.closeSubpath()
     context.addPath(play); context.setFillColor(color(0xC6613F)); context.setLineJoin(.round); context.setLineWidth(18)
     context.setStrokeColor(color(0xC6613F)); context.drawPath(using: .fillStroke)
+    if development {
+        // An amber DEV tag over the lower-right corner, matching the in-app label.
+        context.translateBy(x: -18, y: 10)
+        let tag = CGRect(x: 560, y: 120, width: 380, height: 168)
+        context.saveGState()
+        context.setShadow(offset: CGSize(width: 0, height: -6), blur: 18, color: color(0x000000, 0.3))
+        context.addPath(CGPath(roundedRect: tag, cornerWidth: 44, cornerHeight: 44, transform: nil)); context.setFillColor(color(0xE9B45A)); context.fillPath()
+        context.restoreGState()
+        let text = NSAttributedString(string: "DEV", attributes: [.font: NSFont.systemFont(ofSize: 118, weight: .heavy), .foregroundColor: NSColor(cgColor: color(0x2B2118))!])
+        let line = CTLineCreateWithAttributedString(text)
+        let bounds = CTLineGetImageBounds(line, context)
+        context.textPosition = CGPoint(x: tag.midX - bounds.width / 2 - bounds.minX, y: tag.midY - bounds.height / 2 - bounds.minY)
+        CTLineDraw(line, context)
+    }
     let image = context.makeImage()!
     return NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:])!
 }
@@ -62,10 +86,10 @@ for base in [16, 32, 128, 256, 512] {
     try draw(base).write(to: iconset.appendingPathComponent("icon_\(base)x\(base).png"))
     try draw(base * 2).write(to: iconset.appendingPathComponent("icon_\(base)x\(base)@2x.png"))
 }
-if let preview = CommandLine.arguments.dropFirst().first { try draw(1024).write(to: URL(fileURLWithPath: preview)) }
+if let preview = arguments.first { try draw(1024).write(to: URL(fileURLWithPath: preview)) }
 let iconutil = Process()
 iconutil.executableURL = URL(fileURLWithPath: "/usr/bin/iconutil")
-iconutil.arguments = ["-c", "icns", iconset.path, "-o", "Config/AppIcon.icns"]
+iconutil.arguments = ["-c", "icns", iconset.path, "-o", output]
 try iconutil.run(); iconutil.waitUntilExit()
 guard iconutil.terminationStatus == 0 else { fatalError("iconutil failed") }
-print("Wrote Config/AppIcon.icns")
+print("Wrote \(output)")

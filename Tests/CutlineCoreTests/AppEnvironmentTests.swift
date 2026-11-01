@@ -20,4 +20,10 @@ final class AppEnvironmentTests: XCTestCase {
         XCTAssertEqual(dev.supportURL(root: root).lastPathComponent, "Cutline Dev")
         XCTAssertEqual(release.supportURL(root: root).lastPathComponent, "Cutline")
     }
+    func testVersionLabelNamesTheBuild() {
+        XCTAssertEqual(AppEnvironment(bundleIdentifier: "studio.cutline.editor").versionLabel("0.5.1"), "Cutline 0.5.1")
+        XCTAssertEqual(AppEnvironment(bundleIdentifier: "studio.cutline.editor.dev").versionLabel("0.5.1"), "Cutline Dev 0.5.1")
+        XCTAssertEqual(AppEnvironment(bundleIdentifier: nil).versionLabel(nil), "Cutline Dev (local build)")
+        XCTAssertEqual(AppEnvironment(bundleIdentifier: nil).versionLabel(""), "Cutline Dev (local build)")
+    }
 }

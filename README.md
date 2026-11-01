@@ -8,7 +8,7 @@ A native, local-first macOS video editor for game streamers, built with SwiftUI,
 
 Public source and macOS downloads are available in this repository’s Code and Releases tabs. Preview releases are explicitly labeled and not notarized by Apple.
 
-`dev` is the local working branch; `main` publishes versioned downloads after the full CI suite passes. Release apps include Sparkle updates. Default local builds produce a separate **Cutline Dev** app with its own recovery, generated assets, preferences and API-key entry; its updater is disabled. See [release engineering](docs/RELEASING.md) and [installation](docs/INSTALL.md).
+`dev` is the local working branch; `main` publishes versioned downloads after the full CI suite passes. Release apps include Sparkle updates. Default local builds produce a separate **Cutline Dev** app with its own recovery, generated assets, preferences and API-key entry; its updater is disabled. It carries a DEV badge on its icon and a DEV label beside the name. See [development versus release](docs/DEVELOPMENT.md), [release engineering](docs/RELEASING.md) and [installation](docs/INSTALL.md).
 
 ## Build locally
 

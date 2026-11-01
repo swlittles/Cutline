@@ -1,5 +1,6 @@
 import SwiftUI
 import AppKit
+import CutlineCore
 
 /// Claude-inspired palette: warm ivory and slate surfaces with a terracotta accent.
 /// Every color resolves per appearance, so light and dark stay in step.
@@ -132,7 +133,13 @@ struct StudioBrand: View {
         HStack(spacing: 7) {
             Image(systemName: "scissors").font(.system(size: 15, weight: .semibold)).foregroundStyle(Studio.accent)
             Text("Cutline").font(.system(size: 19, weight: .medium, design: .serif)).foregroundStyle(Studio.text)
-        }.accessibilityElement(children: .combine)
+            // Local builds say so on every screen, so they're never mistaken for the release app.
+            if AppEnvironment.current.isDevelopment {
+                Text("DEV").font(.system(size: 10, weight: .bold)).foregroundStyle(Studio.panel)
+                    .padding(.horizontal, 5).padding(.vertical, 2).background(Studio.warning, in: RoundedRectangle(cornerRadius: 4))
+                    .accessibilityLabel("Development build")
+            }
+        }.accessibilityElement(children: .combine).accessibilityIdentifier(AppEnvironment.current.isDevelopment ? "brand.development" : "brand")
     }
 }
 
@@ -154,7 +161,7 @@ struct AppHeader<Center: View, Trailing: View>: View {
 struct StatusBar: View {
     let text: String
     var busy = false
-    var trailing: String?
+    var trailing: String? = AppEnvironment.currentVersionLabel
     var body: some View {
         HStack(spacing: 8) {
             Circle().fill(busy ? Studio.warning : Studio.success).frame(width: 6, height: 6)
