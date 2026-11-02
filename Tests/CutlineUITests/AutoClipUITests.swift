@@ -117,6 +117,7 @@ extension EditorUITests {
         app.buttons["Done"].firstMatch.click()
         waitForMoments()
         tapInPanel(app.buttons["review.detection"])
+        reveal(app.buttons["detection.advanced"], panel: "detection.scroll")
         app.buttons["detection.advanced"].click()
         reveal(app.textFields["clips.maximum"], panel: "detection.scroll")
         edit(app.textFields["clips.maximum"], "3", submit: true)
