@@ -3,13 +3,13 @@ import CutlineCore
 
 // MARK: - What was said
 /// The whole stream is transcribed on this Mac (Whisper when it's set up, otherwise macOS speech
-/// recognition), once per recording and speech track. With OpenRouter connected, an AI model then
+/// recognition), once per recording and speech track. With an AI provider connected, a model then
 /// reads the transcript and the measured signals and picks moments, each with a title and hook.
 extension EditorStore {
     /// Identifies one recording's speech track, so a failed AI run isn't retried on every refresh.
     private var speechKey: String? { clipMedia.map { "\($0.url.path)#\(routes.speech)" } }
-    var sharesWithOpenRouter: Bool { aiFindsMoments && openRouterConnected }
-    var sharesFramesWithOpenRouter: Bool { sharesWithOpenRouter && aiLooksAtFrames }
+    var sharesWithAI: Bool { aiFindsMoments && aiConnected }
+    var sharesFramesWithAI: Bool { sharesWithAI && aiLooksAtFrames }
 
     /// Shows whatever was already made for this recording, without starting anything.
     func loadSpeech() {
@@ -75,7 +75,8 @@ extension EditorStore {
     func pickWithAIIfNeeded(force: Bool = false) {
         guard aiFindsMoments, !isPickingWithAI, !isScanningClips, let media = clipMedia, let transcript = streamTranscript, let key = speechKey else { return }
         guard force || (aiPicks == nil && !aiPickAttempts.contains(key)) else { return }
-        guard let apiKey = OpenRouterKeychain.read() else { aiPickMessage = "Connect OpenRouter to have AI pick moments from what was said."; return }
+        let provider = aiProvider
+        guard let apiKey = AIKeychain.read(provider) else { aiPickMessage = "Add your \(provider.keyLabel) in Settings → AI to have AI pick moments from what was said."; return }
         let lookAtFrames = aiLooksAtFrames
         guard !transcript.segments.isEmpty || lookAtFrames else { return }
         aiPickAttempts.insert(key)
@@ -95,7 +96,7 @@ extension EditorStore {
                         let times = ClipVisionAI.frameTimes(signals: signals, transcript: transcript, duration: media.duration, budget: budget)
                         step("AI is looking at \(times.count) frames…", 0, 1)
                         do {
-                            notes = try await ClipVisionAI.describe(media: media, times: times, model: visionModel, apiKey: apiKey) { done, total in
+                            notes = try await ClipVisionAI.describe(media: media, times: times, model: visionModel, apiKey: apiKey, provider: provider) { done, total in
                                 step("AI is looking at \(times.count) frames · batch \(done) of \(total)", done, total)
                             }
                             let saved = ScreenNotes(model: visionModel, budget: budget, notes: notes)
@@ -106,13 +107,13 @@ extension EditorStore {
                     }
                 }
                 step("AI is reading the stream…", 0, 1)
-                var picks = try await ClipFinderAI.find(transcript: transcript, signals: signals, notes: notes, duration: media.duration, model: pickModel, apiKey: apiKey) { done, total in
+                var picks = try await ClipFinderAI.find(transcript: transcript, signals: signals, notes: notes, duration: media.duration, model: pickModel, apiKey: apiKey, provider: provider) { done, total in
                     step("AI is reading the stream · part \(min(total, done + 1)) of \(total)", done, total)
                 }
                 var polished = 0
                 if polish, !picks.isEmpty {
                     step("AI is writing titles and hooks…", 0, 1)
-                    (picks, polished) = try await ClipCopyAI.polish(picks, transcript: transcript, signals: signals, notes: notes, model: copyModel, apiKey: apiKey) { done, total in
+                    (picks, polished) = try await ClipCopyAI.polish(picks, transcript: transcript, signals: signals, notes: notes, model: copyModel, apiKey: apiKey, provider: provider) { done, total in
                         step("AI is writing titles and hooks · \(done) of \(total)", done, total)
                     }
                 }
@@ -159,9 +160,25 @@ extension EditorStore {
         return text.isEmpty ? nil : text
     }
 
-    func saveOpenRouterKey(_ key: String) throws {
-        try OpenRouterKeychain.save(key); openRouterConnected = true
-        aiPickAttempts.removeAll(); pickWithAIIfNeeded()
+    func saveAIKey(_ key: String, for provider: AIProvider) throws {
+        try AIKeychain.save(key, for: provider)
+        guard provider == aiProvider else { return }
+        aiConnected = true; aiPickAttempts.removeAll(); pickWithAIIfNeeded()
     }
-    func removeOpenRouterKey() throws { try OpenRouterKeychain.remove(); openRouterConnected = false }
+    func removeAIKey(for provider: AIProvider) throws {
+        try AIKeychain.remove(provider)
+        if provider == aiProvider { aiConnected = false }
+    }
+
+    static var savedProvider: AIProvider { AIProvider(rawValue: UserDefaults.standard.string(forKey: "ai-provider") ?? "") ?? .openRouter }
+    /// OpenRouter keeps the keys earlier versions used, so existing model choices carry over.
+    static func modelKey(_ step: String, _ provider: AIProvider) -> String {
+        switch provider {
+        case .openRouter: return step == "assistant" ? "openrouter-model" : "clip-model-\(step)"
+        case .claude: return "claude-model-\(step)"
+        }
+    }
+    static func model(_ step: String, _ provider: AIProvider) -> String {
+        UserDefaults.standard.string(forKey: modelKey(step, provider)).flatMap { $0.trimmingCharacters(in: .whitespaces).isEmpty ? nil : $0 } ?? provider.defaultModel
+    }
 }

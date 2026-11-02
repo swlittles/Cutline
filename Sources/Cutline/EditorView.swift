@@ -54,10 +54,11 @@ struct EditorView: View {
     private var library: some View {
         VStack(spacing: 0) {
             Picker("Workspace", selection: $store.workspace) {
-                ForEach(advanced ? ["Media", "Captions", "Layers", "AI"] : ["Media", "Captions"], id: \.self) { Text($0).tag($0) }
+                ForEach(advanced ? ["Media", "Captions", "Sounds", "Layers", "AI"] : ["Media", "Captions", "Sounds"], id: \.self) { Text($0).tag($0) }
             }.pickerStyle(.segmented).labelsHidden().padding(12)
-            switch advanced ? store.workspace : (store.workspace == "Captions" ? "Captions" : "Media") {
+            switch advanced ? store.workspace : (["Captions", "Sounds"].contains(store.workspace) ? store.workspace : "Media") {
             case "Captions": CaptionPanel()
+            case "Sounds": SoundsPanel()
             case "AI": AIPanel()
             case "Layers": LayersPanel()
             default: mediaLibrary

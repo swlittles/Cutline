@@ -85,7 +85,7 @@ struct GenerationPanel: View {
 extension EditorStore {
     func generateMedia(kind: GenerationKind, model: GenerationModel, prompt: String, ratio: String, resolution: String, duration: Int) {
         guard !isGenerating else { return }
-        guard let key = OpenRouterKeychain.read() else { error = "Connect OpenRouter above first."; return }
+        guard let key = AIKeychain.read(.openRouter) else { error = "Image and video generation uses OpenRouter. Add an OpenRouter key in Settings → AI first."; return }
         do {
             if kind == .image { _ = try LocalTools.require("ffmpeg") }
             let request = try MediaGeneration.request(kind: kind, model: model, prompt: prompt, ratio: ratio, resolution: resolution, duration: duration, apiKey: key)
@@ -107,7 +107,7 @@ extension EditorStore {
     }
     func resumeGeneration(_ record: GenerationRecord) {
         guard !isGenerating else { return }
-        guard let key = OpenRouterKeychain.read() else { error = "Connect OpenRouter above first."; return }
+        guard let key = AIKeychain.read(.openRouter) else { error = "Image and video generation uses OpenRouter. Add an OpenRouter key in Settings → AI first."; return }
         isGenerating = true; generationMessage = "Resuming video job…"
         generationTask = Task {
             do { _ = try await MediaGeneration.pollVideo(record, apiKey: key) { [weak self] state in Task { @MainActor in self?.generationMessage = "Video · \(state)" } }; status = "Generated video is ready." }

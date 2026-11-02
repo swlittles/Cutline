@@ -30,6 +30,8 @@ Cutline opens on **Home**. **Clip a stream** (⇧⌘N) has four steps:
 3. **Pick clips:** moments fill in as they are found. Each one plays as the finished short. **Keep** always works: if the hook is empty, Cutline uses the suggested hook (shown as the placeholder) in the same undo step. **Skip** passes. **Start/End −1s/+1s** buttons and drag handles trim. **Fewer ↔ More** changes how many moments appear instantly. **Add a moment** opens a scrubber for plays you remember. A play button and scrubber sit under the preview. Detection settings (signals, thresholds, motion area, transcript and AI picks) live behind the sliders button. Keyboard shortcuts are listed under **Keyboard shortcuts**.
 4. **Export:** one button. Shorts go to `~/Movies/Cutline/<recording> shorts/` (change the folder once and it is remembered). MP4s sit at the top of that folder. Editable `.cutline` projects and `analysis.json` go in **Editable projects**. With **Add captions** on, Cutline writes captions for the kept clips before exporting, so there is nothing extra to click.
 
+**Sounds:** keep sound effects in **Settings → Sounds**: import audio files, or a folder whose subfolders (such as `impact`, `whoosh`, `riser`, `pop`) become categories, with an optional `sounds.json` of display names. Cutline ships no sounds of its own. In **Pick clips**, pause the preview where a sound should play and choose **Add at 0:03**; the preview and the exported short both include it. In the editor, the **Sounds** tab adds a sound at the playhead on the Music lane.
+
 **Edit this clip…** opens one moment in the editor without closing the session. **Back to my clips** returns with every decision, hook and trim. Clipping sessions autosave to `Recovery/clip-session.cutline`, so Home offers **Continue clipping** after a relaunch.
 
 Measurements are cached in Application Support (`Analysis/`), keyed by file path, size, modification date and duration, so reopening a recording is instant. Layouts are stored in `scene-presets.json` with owner-only permissions. Saving the session (⌘S) keeps the recording reference, roles, framing, hooks, decisions and trims.
@@ -79,13 +81,13 @@ The multilingual Base model is about 148 MB; English Base and English Small are 
 - **Cut this range from video** removes that caption's time span across the timeline. **Edit video through the transcript → Find gaps** presents gaps between captions for review before cutting. These are gaps in recognized speech, not measured acoustic silence; nonverbal gameplay may be valuable.
 - Caption timing follows source trims, splits, duplication, speed and reorder. Cuts can be undone.
 
-## Optional OpenRouter AI
+## Optional AI: OpenRouter or the Claude API
 
-In **AI → Connect OpenRouter**, enter a key and click **Save to Keychain**. Keys stay in macOS Keychain and are never written to project files. These remote features use your OpenRouter credits.
+Open **Settings → AI** (⌘,). Choose where AI requests go, **OpenRouter** or the **Claude API (Anthropic)**, paste that provider's key and click **Save**. Each provider keeps its own key in macOS Keychain, never in project files, and its own model for each step: picking moments, titles and hooks, looking at frames, and the editing assistant. OpenRouter defaults to `google/gemini-2.5-flash`; Claude defaults to `claude-opus-5-5` (`claude-sonnet-5-5` and `claude-haiku-5-5` cost less). Every model must support structured output. Requests use your credits with that provider. The editor's **AI** panel and **Pick clips** settings can also connect a key.
 
-**Editing assistant:** generate/import captions first. Ask for gaming highlights, title ideas, caption corrections or translation. The app sends your instruction and timestamped transcript text/IDs to OpenRouter and its provider, in bounded sections. It does not upload recordings. Suggestions display for review; apply caption edits or keep a highlight with undo. The default `google/gemini-2.5-flash` supports structured outputs. You can set another compatible model ID. This assistant understands transcript evidence, not visual gameplay events.
+**Editing assistant:** generate/import captions first. Ask for gaming highlights, title ideas, caption corrections or translation. The app sends your instruction and timestamped transcript text/IDs to the chosen provider, in bounded sections. It does not upload recordings. Suggestions display for review; apply caption edits or keep a highlight with undo. This assistant understands transcript evidence, not visual gameplay events.
 
-**Generate media:** choose Image or Video, load the current model catalog, choose supported options, and enter a prompt. Check the linked model pricing, then generate. Results stay under the current build’s Application Support folder (`Cutline/Generated` or `Cutline Dev/Generated`), with model/prompt/job/cost metadata. Add completed media to the library explicitly. Image results retain a PNG and become five-second video clips when added. Video jobs persist their remote IDs and offer **Resume job**. **Stop waiting** stops local polling; it does not promise to cancel a remote job or its charges. If submission is interrupted before an ID arrives, inspect OpenRouter activity before submitting again.
+**Generate media** always uses OpenRouter: choose Image or Video, load the current model catalog, choose supported options, and enter a prompt. Check the linked model pricing, then generate. Results stay under the current build’s Application Support folder (`Cutline/Generated` or `Cutline Dev/Generated`), with model/prompt/job/cost metadata. Add completed media to the library explicitly. Image results retain a PNG and become five-second video clips when added. Video jobs persist their remote IDs and offer **Resume job**. **Stop waiting** stops local polling; it does not promise to cancel a remote job or its charges. If submission is interrupted before an ID arrives, inspect OpenRouter activity before submitting again.
 
 The public model catalogs were checked live. Paid assistant/image/video responses are covered with mocked transport tests; no live billable inference has been performed with a user key. These integrations need a live account acceptance pass before production use. See [AI architecture](docs/AI_ARCHITECTURE.md).
 
@@ -117,7 +119,7 @@ See [the testing guide](docs/TESTING.md) for setup, isolation, CI, and result bu
 - `Sources/CutlineVerify`: real-media integration checks.
 - `docs/CAPCUT_PARITY.md`: feature and quality acceptance backlog.
 
-No telemetry is implemented. Network access is used for model downloads, requested catalog loads, and explicitly invoked OpenRouter features. No automatic source uploads or publishing.
+No telemetry is implemented. Network access is used for model downloads, requested catalog loads, and explicitly invoked OpenRouter or Claude API features. No automatic source uploads or publishing.
 
 ## License
 
@@ -125,4 +127,4 @@ No telemetry is implemented. Network access is used for model downloads, request
 
 ## Automatic clips without API costs
 
-**Clip a stream** finds activity from local audio levels, sampled frame changes and moments you mark. It also transcribes the stream on your Mac (Whisper or macOS speech recognition), so each moment shows what was said. With an OpenRouter key, AI can read the transcript and pick moments, then write titles and hooks. Each step has its own model, and an opt-in vision step can also look at still frames. Without vision, only text is sent. Review them one by one and batch-export separate videos and editable projects. No OpenRouter key is required. See [automatic clipping](docs/AUTOMATIC_CLIPS.md) for thresholds, AI picks and limitations.
+**Clip a stream** finds activity from local audio levels, sampled frame changes and moments you mark. It also transcribes the stream on your Mac (Whisper or macOS speech recognition), so each moment shows what was said. With an OpenRouter or Claude API key, AI can read the transcript and pick moments, then write titles and hooks. Each step has its own model, and an opt-in vision step can also look at still frames. Without vision, only text is sent. Review them one by one and batch-export separate videos and editable projects. No OpenRouter key is required. See [automatic clipping](docs/AUTOMATIC_CLIPS.md) for thresholds, AI picks and limitations.

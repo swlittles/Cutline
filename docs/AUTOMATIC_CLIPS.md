@@ -42,11 +42,11 @@ The transcript is used three ways:
 
 - **Each moment shows what was said** in the list and under **Why this moment?**, so measured moments are no longer described only as "Big reaction".
 - **Captions for kept clips** are cut from it instead of transcribing again.
-- **AI picks**, when OpenRouter is connected.
+- **AI picks**, when an AI provider is connected.
 
-### AI picks (optional, OpenRouter)
+### AI picks (optional, OpenRouter or the Claude API)
 
-With **Let AI pick moments from the transcript** on and an OpenRouter key saved (Keychain), up to three AI steps run once the transcript and scan are ready. Each step has its own model ID in **Pick clips → settings**, separate from the editor's AI panel. Every model must support structured output.
+With **Let AI pick moments from the transcript** on and a key saved for the chosen provider (**Settings → AI**: OpenRouter or the Claude API), up to three AI steps run once the transcript and scan are ready. Each step has its own model ID, per provider, in **Settings → AI** and **Pick clips → settings**. Every model must support structured output. Claude requests use structured output (`output_config.format`) and think before answering: picking runs at medium effort, the other steps at low. On current Claude models, a request a safety check declines is retried on a suitable model (`fallbacks: "default"`).
 
 1. **Look at frames** (off by default). Small JPEG stills (768 px wide) go to a vision model, six per request and four requests at a time. The frames come from marked moments, just before "clip it", the strongest audio and motion peaks (at least 6 s apart), and an even sweep that uses a quarter of the budget. The default budget is 120 frames; the range is 20–400. For each frame, the model says what kind of activity it is (gameplay, menu, loading, chatting or other), gives a one-line description, and rates intensity. These notes join the timeline, are cached per recording, and appear under **Why this moment?**. This is the only step that uploads images. If it fails, picking carries on from the transcript and says frames were skipped.
 2. **Picking moments.** The timeline goes to the picking model. It holds the transcript joined into utterances, plus the strongest audio bursts and screen-activity peaks, your marked moments, "clip it" voice markers, and any frame notes. Streams over 90 minutes are sent in 40-minute sections that overlap by 2 minutes, three at a time. The model rates each clip 0–10 on hook, payoff, arousal, pacing, clarity, novelty, relevance to strangers and commentability. Cutline combines these into the 0–100 score: hook and payoff count most, there is a small bonus for 18–32 second clips, and anything under 6/10 is dropped. Overlapping picks collapse to the better one, up to 30.

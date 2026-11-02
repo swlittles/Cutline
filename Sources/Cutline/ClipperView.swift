@@ -16,7 +16,7 @@ struct ClipperView: View {
                 case .export: ExportStepView()
                 }
             }.frame(maxWidth: .infinity, maxHeight: .infinity).background(Studio.base)
-            StatusBar(text: store.status, busy: store.isScanningClips || store.isExportingClips || store.isTranscribingClips || store.isListening || store.isPickingWithAI, sharesTranscript: store.sharesWithOpenRouter, sharesFrames: store.sharesFramesWithOpenRouter)
+            StatusBar(text: store.status, busy: store.isScanningClips || store.isExportingClips || store.isTranscribingClips || store.isListening || store.isPickingWithAI, sharesTranscript: store.sharesWithAI, sharesFrames: store.sharesFramesWithAI, destination: store.aiProvider.name)
         }.accessibilityElement(children: .contain).accessibilityIdentifier("clipper")
     }
 }

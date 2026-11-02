@@ -122,13 +122,13 @@ extension EditorStore {
     }
     func requestAI() {
         guard !isThinking else { return }
-        guard let key = OpenRouterKeychain.read() else { error = "Save your OpenRouter API key in the AI panel first."; return }
+        let provider = aiProvider
+        guard let key = AIKeychain.read(provider) else { error = "Add your \(provider.keyLabel) in Settings → AI first."; return }
         let snapshot = project, epoch = projectEpoch, prompt = aiPrompt, model = aiModel
         aiSnapshot = snapshot; aiProposal = nil; isThinking = true
-        UserDefaults.standard.set(model, forKey: "openrouter-model")
         assistantTask = Task {
             do {
-                let proposal = try await EditingAssistant.request(project: snapshot, prompt: prompt, model: model, apiKey: key) { [weak self] index, count in
+                let proposal = try await EditingAssistant.request(project: snapshot, prompt: prompt, model: model, apiKey: key, provider: provider) { [weak self] index, count in
                     Task { @MainActor in self?.aiProgress = "Reading transcript section \(index) of \(count)…" }
                 }
                 guard projectEpoch == epoch else { return }

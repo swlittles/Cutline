@@ -18,8 +18,8 @@ public enum ClipCopyAI {
     /// Lines with fewer letters than this, and no frame notes, aren't enough to write from.
     static let minimumLetters = 24
 
-    static func makeRequest(_ pick: AIClipPick, timeline: String, model: String, apiKey: String) throws -> URLRequest {
-        let o = OpenRouterCall.self
+    static func makeRequest(_ pick: AIClipPick, timeline: String, model: String, apiKey: String, provider: AIProvider = .openRouter) throws -> URLRequest {
+        let o = AICall.self
         let schema = o.object(["title": o.string, "hook": o.string, "hookOptions": ["type": "array", "items": o.string]])
         let user = """
         Draft title: \(pick.title)
@@ -30,12 +30,12 @@ public enum ClipCopyAI {
         \(timeline)
         END TIMELINE
         """
-        return try o.request(model: model, system: system, user: user, schemaName: "clip_copy", schema: schema, maxTokens: 800, apiKey: apiKey, timeout: 90)
+        return try o.request(model: model, system: system, user: user, schemaName: "clip_copy", schema: schema, maxTokens: 800, apiKey: apiKey, provider: provider, timeout: 90)
     }
 
     static func apply(_ content: String, to pick: AIClipPick) throws -> AIClipPick {
         struct Copy: Decodable { var title: String?; var hook: String?; var hookOptions: [String]? }
-        guard let data = OpenRouterCall.json(in: content), let copy = try? JSONDecoder().decode(Copy.self, from: data) else {
+        guard let data = AICall.json(in: content), let copy = try? JSONDecoder().decode(Copy.self, from: data) else {
             throw EditError.invalid("The AI's titles couldn't be read.")
         }
         func clean(_ text: String?, _ limit: Int) -> String { String((text ?? "").trimmingCharacters(in: .whitespacesAndNewlines).replacingOccurrences(of: "\n", with: " ").prefix(limit)) }
@@ -51,7 +51,7 @@ public enum ClipCopyAI {
 
     /// Returns every pick, polished where possible, and how many were polished.
     /// Only cancellation and a rejected key, missing credits or an unusable model throw.
-    public static func polish(_ picks: [AIClipPick], transcript: StreamTranscript, signals: [ClipEvidence], notes: [ScreenNote] = [], model: String, apiKey: String,
+    public static func polish(_ picks: [AIClipPick], transcript: StreamTranscript, signals: [ClipEvidence], notes: [ScreenNote] = [], model: String, apiKey: String, provider: AIProvider = .openRouter,
                               session: URLSession = .shared, progress: @escaping @Sendable (Int, Int) -> Void = { _, _ in }) async throws -> (picks: [AIClipPick], polished: Int) {
         guard !picks.isEmpty, !apiKey.isEmpty, !model.trimmingCharacters(in: .whitespaces).isEmpty else { return (picks, 0) }
         let work: [(index: Int, request: URLRequest)] = try picks.enumerated().compactMap { index, pick in
@@ -60,13 +60,13 @@ public enum ClipCopyAI {
             let letters = transcript.text(from: range.start, to: range.end).filter(\.isLetter).count
             guard letters >= minimumLetters || hasNotes else { return nil }
             let timeline = ClipFinderAI.timeline(transcript: transcript, signals: signals, notes: notes, in: range)
-            return (index, try makeRequest(pick, timeline: timeline, model: model, apiKey: apiKey))
+            return (index, try makeRequest(pick, timeline: timeline, model: model, apiKey: apiKey, provider: provider))
         }
         guard !work.isEmpty else { return (picks, 0) }
-        let results = try await OpenRouterCall.batch(work.count, concurrency: concurrency, progress: progress) { item -> AIClipPick? in
+        let results = try await AICall.batch(work.count, concurrency: concurrency, progress: progress) { item -> AIClipPick? in
             let pick = picks[work[item].index]
-            do { return try await OpenRouterCall.send(work[item].request, session: session) { try apply($0, to: pick) } }
-            catch let error as OpenRouterCall.Failure { throw error }
+            do { return try await AICall.send(work[item].request, session: session) { try apply($0, to: pick) } }
+            catch let error as AICall.Failure { throw error }
             catch is CancellationError { throw CancellationError() }
             catch { return nil }   // This clip keeps its draft.
         }

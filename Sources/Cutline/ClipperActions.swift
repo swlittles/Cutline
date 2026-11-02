@@ -335,7 +335,7 @@ extension EditorStore {
         var source = report
         source.media = project.media.first { $0.sameSource(as: report.media) } ?? report.media
         let captions = review?.captionsEnabled == true ? review?.captions[candidate.id] : nil
-        return try AutoClipBatch.clipProject(applied(candidate), report: source, options: project.options, hook: autoClipHook(candidate.id), captions: captions)
+        return try AutoClipBatch.clipProject(applied(candidate), report: source, options: project.options, hook: autoClipHook(candidate.id), captions: captions, sounds: project.autoClipSounds?[candidate.id])
     }
     /// The review preview renders the real short: framing, branding strip, hook and captions.
     func refreshReviewPreview() {
@@ -558,12 +558,13 @@ extension EditorStore {
         let candidates = kept.map(applied)
         let hooks = Dictionary(uniqueKeysWithValues: kept.map { ($0.id, autoClipHook($0.id)) })
         let captions = review?.captionsEnabled == true ? (review?.captions ?? [:]) : [:]
+        let sounds = (project.autoClipSounds ?? [:]).filter { id, _ in kept.contains { $0.id == id } }
         let token = clipJobID, options = project.options, branding = creatorProfile
         let name = "\(media.name) shorts"
         isExportingClips = true; clipProgress = 0; clipMessage = "Getting your shorts ready…"; clipOutput = nil
         clipExportTask = Task {
             do {
-                let output = try await AutoClipBatch.export(report: exportReport, candidates: candidates, to: folder, name: name, options: options, hooks: hooks, branding: branding, captions: captions) { [weak self] update in
+                let output = try await AutoClipBatch.export(report: exportReport, candidates: candidates, to: folder, name: name, options: options, hooks: hooks, branding: branding, captions: captions, sounds: sounds) { [weak self] update in
                     Task { @MainActor in guard let self, self.clipJobID == token, self.isExportingClips else { return }; self.clipProgress = update.fraction; self.clipMessage = update.message }
                 }
                 guard clipJobID == token else { return }

@@ -55,6 +55,8 @@ public struct EditProject: Codable, Equatable, Sendable {
     public var workflow: OutputWorkflow?
     public var shortHook: String?
     public var autoClipHooks: [String: String]?
+    /// Sound effects added to a moment in Pick clips, keyed like `autoClipHooks`. Starts are seconds from the clip's start.
+    public var autoClipSounds: [String: [AudioClip]]?
     public var settings: ProjectSettings?
     public var captionTrack: CaptionTrack?
     public var transcripts: [SourceTranscript]?

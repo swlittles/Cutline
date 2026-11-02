@@ -212,6 +212,19 @@ extension EditorStoreTests {
         store.showHome(); XCTAssertEqual(store.mode, .home)
         store.showEditor(); XCTAssertEqual(store.mode, .editor)
     }
+    func testSoundsAddedToAMomentPlayInItsShortAndUndo() async throws {
+        _ = try await findMoments()
+        let candidate = try XCTUnwrap(store.focusedCandidate)
+        let sound = SoundEffect(id: "impact/boom.m4a", name: "Boom", category: "impact", url: fixture.appendingPathComponent("music.m4a"), duration: 1)
+        store.addSoundToMoment(sound)
+        let placed = try XCTUnwrap(store.momentSounds(candidate.id).first)
+        XCTAssertEqual(placed.name, "Boom"); XCTAssertGreaterThanOrEqual(placed.start, 0)
+        XCTAssertEqual(try store.preparedAutoClip(candidate, report: store.clipReport!).music?.map(\.name), ["Boom"], "The preview and export carry the sound")
+        store.undo(); XCTAssertTrue(store.momentSounds(candidate.id).isEmpty)
+        store.redo(); store.removeMomentSound(candidate.id, sound: placed.id)
+        XCTAssertNil(store.project.autoClipSounds?[candidate.id])
+        XCTAssertNil(try store.preparedAutoClip(candidate, report: store.clipReport!).music)
+    }
     func testClipCaptionsFromKeptRangesAppearInPreparedProject() async throws {
         _ = try await findMoments()
         let candidate = try XCTUnwrap(store.focusedCandidate)
@@ -250,5 +263,34 @@ extension EditorStoreTests {
 
         store.aiFindsMoments = false
         try await until({ !self.store.moments.contains { $0.pickedByAI } })
+    }
+}
+
+extension EditorStoreTests {
+    func testEachAIProviderKeepsItsOwnKeyAndModels() throws {
+        let previous = store.aiProvider
+        defer { store.aiProvider = previous }
+        store.aiProvider = .openRouter
+        let openRouterPick = store.clipPickModel
+        try store.saveAIKey("or-test", for: .openRouter)
+        XCTAssertTrue(store.aiConnected)
+        store.aiProvider = .claude
+        XCTAssertFalse(store.aiConnected, "A Claude key is separate from the OpenRouter key")
+        XCTAssertEqual(store.clipPickModel, UserDefaults.standard.string(forKey: "claude-model-picks") ?? "claude-opus-5-5")
+        try store.saveAIKey("sk-ant-test", for: .claude)
+        XCTAssertTrue(store.aiConnected); XCTAssertEqual(AIKeychain.read(.claude), "sk-ant-test")
+        store.aiProvider = .openRouter
+        XCTAssertEqual(store.clipPickModel, openRouterPick, "Switching back restores that provider's models")
+        try store.removeAIKey(for: .claude)
+        XCTAssertNil(AIKeychain.read(.claude)); XCTAssertEqual(AIKeychain.read(.openRouter), "or-test")
+    }
+    func testSoundsGoOnTheTimelineAtThePlayhead() {
+        seed(); store.playhead = 2
+        let sound = SoundEffect(id: "pop/wow.m4a", name: "Wow", category: "pop", url: fixture.appendingPathComponent("music.m4a"), duration: 1)
+        store.addSoundAtPlayhead(sound)
+        XCTAssertEqual(store.timelineSounds.map(\.name), ["Wow"]); XCTAssertEqual(store.timelineSounds.first?.start, 2)
+        store.removeTimelineSound(store.timelineSounds[0].id)
+        XCTAssertTrue(store.timelineSounds.isEmpty)
+        store.undo(); XCTAssertEqual(store.timelineSounds.count, 1)
     }
 }

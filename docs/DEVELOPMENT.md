@@ -6,6 +6,8 @@
 | Bundle ID / preferences domain | `studio.cutline.editor` | `studio.cutline.editor.dev` |
 | Data folder under Application Support | `Cutline/` | `Cutline Dev/` |
 | OpenRouter key in the Keychain | `studio.cutline.openrouter` | `studio.cutline.dev.openrouter` |
+| Claude API key in the Keychain | `studio.cutline.anthropic` | `studio.cutline.dev.anthropic` |
+| Sound library | `Cutline/Sounds/` | `Cutline Dev/Sounds/` |
 | AI agent connector name | `cutline` | `cutline-dev` |
 | Icon and header | Standard | DEV badge on the icon, DEV label beside the name |
 | Version in the status bar and Settings | Cutline 0.5.1 | Cutline Dev 0.5.1 |

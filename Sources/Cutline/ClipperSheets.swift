@@ -110,11 +110,14 @@ private struct SpeechSettingsCard: View {
             Divider()
             Toggle("Let AI pick moments from the transcript", isOn: $store.aiFindsMoments).accessibilityIdentifier("clips.ai")
             if store.aiFindsMoments {
-                if !store.openRouterConnected {
+                let provider = store.aiProvider
+                Picker("AI", selection: $store.aiProvider) { ForEach(AIProvider.allCases) { Text($0.name).tag($0) } }
+                    .pickerStyle(.segmented).accessibilityIdentifier("clips.aiProvider")
+                if !store.aiConnected {
                     HStack {
-                        SecureField("OpenRouter API key", text: $key).textFieldStyle(.roundedBorder).accessibilityIdentifier("clips.aiKey")
+                        SecureField(provider.keyLabel, text: $key).textFieldStyle(.roundedBorder).accessibilityIdentifier("clips.aiKey")
                         Button("Connect") {
-                            do { try store.saveOpenRouterKey(key); key = "" } catch { store.error = error.localizedDescription }
+                            do { try store.saveAIKey(key, for: provider); key = "" } catch { store.error = error.localizedDescription }
                         }.buttonStyle(.secondary).disabled(key.trimmingCharacters(in: .whitespaces).isEmpty)
                     }
                 }
@@ -135,21 +138,22 @@ private struct SpeechSettingsCard: View {
                 if store.aiLooksAtFrames {
                     Stepper("Up to \(store.visionFrameBudget) frames", value: $store.visionFrameBudget, in: ClipVisionAI.budgetRange, step: 20).accessibilityIdentifier("clips.visionFrames")
                 }
-                if store.openRouterConnected {
-                    HStack {
+                HStack {
+                    if store.aiConnected {
                         Button("Ask AI again", action: store.repickWithAI).buttonStyle(.secondary).disabled(store.streamTranscript == nil || store.isPickingWithAI)
-                        Spacer()
-                        Button("Disconnect OpenRouter") { do { try store.removeOpenRouterKey() } catch { store.error = error.localizedDescription } }.buttonStyle(.quiet)
                     }
+                    Spacer()
+                    SettingsButton(title: store.aiConnected ? "Keys and models in Settings…" : "Settings → AI…").buttonStyle(.quiet)
                 }
+                let destination = provider == .openRouter ? "OpenRouter and each model’s provider" : "Anthropic"
                 Text(store.aiLooksAtFrames
-                     ? "Sends the transcript, loudness and motion timings, and small still frames (768 px) to OpenRouter and each model’s provider. Audio never leaves this Mac. Uses your OpenRouter credits."
-                     : "Sends the transcript text and loudness/motion timings to OpenRouter and the model's provider. Video and audio never leave this Mac. Uses your OpenRouter credits.")
+                     ? "Sends the transcript, loudness and motion timings, and small still frames (768 px) to \(destination). Audio never leaves this Mac. Uses your \(provider.account) credits."
+                     : "Sends the transcript text and loudness/motion timings to \(destination). Video and audio never leave this Mac. Uses your \(provider.account) credits.")
                     .font(.system(size: 11)).foregroundStyle(Studio.muted).fixedSize(horizontal: false, vertical: true)
             }
         }.font(.system(size: 12))
     }
-    /// An OpenRouter model ID, such as google/gemini-2.5-flash.
+    /// A model ID for the chosen provider, such as google/gemini-2.5-flash or claude-opus-5-5.
     private func modelField(_ value: Binding<String>, id: String) -> some View {
         TextField("Model ID", text: value).textFieldStyle(.roundedBorder).font(.system(size: 11, design: .monospaced)).accessibilityIdentifier(id)
     }

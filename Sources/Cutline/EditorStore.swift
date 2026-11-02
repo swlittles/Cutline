@@ -45,16 +45,27 @@ final class EditorStore: ObservableObject {
     @Published var aiFindsMoments = UserDefaults.standard.object(forKey: "clip-ai-picks") as? Bool ?? true {
         didSet { UserDefaults.standard.set(aiFindsMoments, forKey: "clip-ai-picks"); if aiFindsMoments { pickWithAIIfNeeded() } else { aiPickTask?.cancel(); isPickingWithAI = false }; evaluateMoments() }
     }
-    @Published var openRouterConnected = OpenRouterKeychain.read() != nil
+    /// OpenRouter or the Claude API. Each keeps its own key and its own model for every step.
+    @Published var aiProvider = EditorStore.savedProvider {
+        didSet {
+            guard aiProvider != oldValue else { return }
+            UserDefaults.standard.set(aiProvider.rawValue, forKey: "ai-provider")
+            clipPickModel = Self.model("picks", aiProvider); clipCopyModel = Self.model("copy", aiProvider)
+            clipVisionModel = Self.model("vision", aiProvider); aiModel = Self.model("assistant", aiProvider)
+            aiConnected = AIKeychain.read(aiProvider) != nil
+            aiPickTask?.cancel(); isPickingWithAI = false; aiPickAttempts.removeAll(); pickWithAIIfNeeded()
+        }
+    }
+    @Published var aiConnected = AIKeychain.read(EditorStore.savedProvider) != nil
     /// Each AI step in clip finding has its own model. The editor's AI panel keeps `aiModel`.
-    @Published var clipPickModel = UserDefaults.standard.string(forKey: "clip-model-picks") ?? EditingAssistant.defaultModel {
-        didSet { UserDefaults.standard.set(clipPickModel, forKey: "clip-model-picks") }
+    @Published var clipPickModel = EditorStore.model("picks", EditorStore.savedProvider) {
+        didSet { UserDefaults.standard.set(clipPickModel, forKey: Self.modelKey("picks", aiProvider)) }
     }
-    @Published var clipCopyModel = UserDefaults.standard.string(forKey: "clip-model-copy") ?? EditingAssistant.defaultModel {
-        didSet { UserDefaults.standard.set(clipCopyModel, forKey: "clip-model-copy") }
+    @Published var clipCopyModel = EditorStore.model("copy", EditorStore.savedProvider) {
+        didSet { UserDefaults.standard.set(clipCopyModel, forKey: Self.modelKey("copy", aiProvider)) }
     }
-    @Published var clipVisionModel = UserDefaults.standard.string(forKey: "clip-model-vision") ?? EditingAssistant.defaultModel {
-        didSet { UserDefaults.standard.set(clipVisionModel, forKey: "clip-model-vision") }
+    @Published var clipVisionModel = EditorStore.model("vision", EditorStore.savedProvider) {
+        didSet { UserDefaults.standard.set(clipVisionModel, forKey: Self.modelKey("vision", aiProvider)) }
     }
     @Published var aiPolishesCopy = UserDefaults.standard.object(forKey: "clip-ai-copy") as? Bool ?? true {
         didSet { UserDefaults.standard.set(aiPolishesCopy, forKey: "clip-ai-copy") }
@@ -70,6 +81,11 @@ final class EditorStore: ObservableObject {
     var listenTask: Task<Void, Never>?
     var aiPickTask: Task<Void, Never>?
     let reviewPlayer = AVPlayer()
+    /// The sound library, and a player for hearing one before adding it.
+    @Published var sounds: [SoundEffect] = []
+    /// The Settings tab to show; links such as "Settings → AI…" set it before opening Settings.
+    @Published var settingsTab = "general"
+    let soundPlayer = AVPlayer()
     let auditionPlayer = AVPlayer()
     var clipTask: Task<Void, Never>?
     var clipExportTask: Task<Void, Never>?
@@ -98,8 +114,8 @@ final class EditorStore: ObservableObject {
     @Published var isThinking = false
     @Published var aiProgress = ""
     @Published var aiProposal: AIEditProposal?
-    @Published var aiModel = UserDefaults.standard.string(forKey: "openrouter-model") ?? EditingAssistant.defaultModel {
-        didSet { UserDefaults.standard.set(aiModel, forKey: "openrouter-model") }
+    @Published var aiModel = EditorStore.model("assistant", EditorStore.savedProvider) {
+        didSet { UserDefaults.standard.set(aiModel, forKey: Self.modelKey("assistant", aiProvider)) }
     }
     @Published var aiPrompt = "Find the best gaming highlights for short clips. Include the setup and reaction, and suggest engaging titles."
     @Published var isGenerating = false

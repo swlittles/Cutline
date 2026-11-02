@@ -82,7 +82,7 @@ struct CutlineApp: App {
                 }.disabled(store.mode != .editor)
             }
         }
-        Settings { UpdatesSettingsView(updates: updates).environmentObject(store).tint(Studio.accent) }
+        Settings { SettingsView(updates: updates).environmentObject(store).tint(Studio.accent) }
     }
 }
 

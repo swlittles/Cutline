@@ -31,7 +31,7 @@ struct InspectorView: View {
                             Text(store.brandingReady ? store.creatorProfile.displayText : "Add your channel username").font(.system(size: 11))
                                 .foregroundStyle(store.brandingReady ? Studio.muted : Studio.warning).lineLimit(1)
                             Spacer()
-                            SettingsLink { Text(store.brandingReady ? "Change" : "Add") }.buttonStyle(.accentLink)
+                            SettingsButton(title: store.brandingReady ? "Change" : "Add", tab: "general").buttonStyle(.accentLink)
                         }
                     }
                 }

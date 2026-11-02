@@ -7,6 +7,7 @@ public struct AppEnvironment: Equatable, Sendable {
     public var name: String { isDevelopment ? "Cutline Dev" : "Cutline" }
     public var bundleIdentifier: String { isDevelopment ? "studio.cutline.editor.dev" : "studio.cutline.editor" }
     public var credentialService: String { isDevelopment ? "studio.cutline.dev.openrouter" : "studio.cutline.openrouter" }
+    public var claudeCredentialService: String { isDevelopment ? "studio.cutline.dev.anthropic" : "studio.cutline.anthropic" }
     public func supportURL(root: URL) -> URL { root.appendingPathComponent(name, isDirectory: true) }
     /// "Cutline 0.5.1" or "Cutline Dev 0.5.1". A build without a version says it is a local build.
     public func versionLabel(_ version: String?) -> String {

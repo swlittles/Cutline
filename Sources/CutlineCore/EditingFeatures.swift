@@ -78,6 +78,9 @@ public struct AudioClip: Codable, Identifiable, Equatable, Sendable {
     public var volume = 1.0
     public var fadeIn = 0.0
     public var fadeOut = 0.0
+    /// A sound effect's name from the library; music and voiceovers show their file name.
+    public var label: String?
+    public var name: String { label ?? url.deletingPathExtension().lastPathComponent }
     public init(url: URL, start: Double, duration: Double) { self.url = url; self.start = start; self.duration = duration }
 }
 

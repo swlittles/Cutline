@@ -4,7 +4,7 @@ public enum AutoClipBatch {
     public static let projectsFolder = "Editable projects"
     /// Each successful batch is a new directory: the MP4s at the top, editable projects and the
     /// scan report in a subfolder. Failures and cancellation leave no half-published batch.
-    public static func export(report: AutoClipReport, candidates: [AutoClipCandidate], to parent: URL, name: String? = nil, options: ProjectSettings = ProjectSettings(), hooks: [String: String] = [:], branding: ShortBranding = ShortBranding(), captions: [String: [TranscriptSegment]] = [:], progress: @escaping @Sendable (ClipScanProgress) -> Void = { _ in }) async throws -> URL {
+    public static func export(report: AutoClipReport, candidates: [AutoClipCandidate], to parent: URL, name: String? = nil, options: ProjectSettings = ProjectSettings(), hooks: [String: String] = [:], branding: ShortBranding = ShortBranding(), captions: [String: [TranscriptSegment]] = [:], sounds: [String: [AudioClip]] = [:], progress: @escaping @Sendable (ClipScanProgress) -> Void = { _ in }) async throws -> URL {
         guard parent.isFileURL, !candidates.isEmpty, candidates.count <= 100 else { throw EditError.invalid("Select clips and a local output folder.") }
         let token = UUID().uuidString
         let staging = parent.appendingPathComponent(".cutline-clips-\(token)", isDirectory: true)
@@ -17,7 +17,7 @@ public enum AutoClipBatch {
         let encoder = JSONEncoder(); encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         for (index, candidate) in candidates.enumerated() {
             try Task.checkCancellation()
-            let project = try clipProject(candidate, report: report, options: options, hook: hooks[candidate.id], captions: captions[candidate.id])
+            let project = try clipProject(candidate, report: report, options: options, hook: hooks[candidate.id], captions: captions[candidate.id], sounds: sounds[candidate.id])
             try project.validateForExport()
             try branding.validate()
             let stem = String(format: "%02d", index + 1) + " - " + fileName(hooks[candidate.id].flatMap { $0.isEmpty ? nil : $0 } ?? candidate.title)
@@ -34,7 +34,7 @@ public enum AutoClipBatch {
         return destination
     }
     /// The same editable project is previewed, exported and saved beside each MP4.
-    public static func clipProject(_ candidate: AutoClipCandidate, report: AutoClipReport, options: ProjectSettings, hook: String?, captions: [TranscriptSegment]?) throws -> EditProject {
+    public static func clipProject(_ candidate: AutoClipCandidate, report: AutoClipReport, options: ProjectSettings, hook: String?, captions: [TranscriptSegment]?, sounds: [AudioClip]? = nil) throws -> EditProject {
         var project = try AutoClipRules.project(for: candidate, media: report.media, outputAudioTracks: report.settings.exportTracks)
         project.options = options
         project.shortHook = hook
@@ -42,6 +42,9 @@ public enum AutoClipBatch {
             let transcript = SourceTranscript(mediaID: report.media.id, audioTrack: 0, language: "auto", segments: captions)
             project.transcripts = [transcript]; project.generateCaptions(from: transcript)
         }
+        // Sounds past the end of a trimmed clip are left out rather than failing the export.
+        let effects = (sounds ?? []).filter { $0.start < project.duration }
+        if !effects.isEmpty { project.music = effects }
         try project.validate()
         return project
     }

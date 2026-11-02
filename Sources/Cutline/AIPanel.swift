@@ -4,25 +4,28 @@ import CutlineCore
 struct AIPanel: View {
     @EnvironmentObject var store: EditorStore
     @State private var key = ""
-    @State private var keySaved = false
     @State private var configure = false
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 Label("Editing assistant", systemImage: "sparkles").font(.system(size: 14, weight: .semibold))
                 Text("Find moments worth clipping, improve captions, translate dialogue, and draft titles.").font(.system(size: 11)).foregroundStyle(Studio.muted)
-                DisclosureGroup(keySaved ? "OpenRouter · connected" : "Connect OpenRouter", isExpanded: $configure) {
+                let provider = store.aiProvider
+                DisclosureGroup(store.aiConnected ? "\(provider.name) · connected" : "Connect \(provider.name)", isExpanded: $configure) {
                     VStack(alignment: .leading, spacing: 10) {
-                        SecureField("OpenRouter API key", text: $key).textFieldStyle(.roundedBorder)
+                        Picker("Provider", selection: $store.aiProvider) { ForEach(AIProvider.allCases) { Text($0.name).tag($0) } }
+                            .pickerStyle(.segmented).labelsHidden().accessibilityIdentifier("ai.provider")
+                        SecureField(provider.keyLabel, text: $key).textFieldStyle(.roundedBorder)
                         HStack {
                             Button("Save to Keychain") {
-                                do { try store.saveOpenRouterKey(key); key = ""; keySaved = true; configure = false }
+                                do { try store.saveAIKey(key, for: provider); key = ""; configure = false }
                                 catch { store.error = error.localizedDescription }
                             }.disabled(key.isEmpty)
-                            if keySaved { Button("Remove") { do { try store.removeOpenRouterKey(); keySaved = false } catch { store.error = error.localizedDescription } } }
+                            if store.aiConnected { Button("Remove") { do { try store.removeAIKey(for: provider) } catch { store.error = error.localizedDescription } } }
                         }
                         TextField("Model ID", text: $store.aiModel).textFieldStyle(.roundedBorder)
-                        Text("Use a model that supports structured outputs. Your key is stored in macOS Keychain, never in project files.").foregroundStyle(Studio.muted)
+                        Text("Use a model that supports structured outputs, such as \(provider.modelExamples). Your key is stored in macOS Keychain, never in project files.").foregroundStyle(Studio.muted)
+                        SettingsButton(title: "All AI settings…").buttonStyle(.accentLink)
                     }.font(.system(size: 10)).padding(.top, 8)
                 }.font(.system(size: 11))
                 Divider()
@@ -35,10 +38,10 @@ struct AIPanel: View {
                 }
                 TextEditor(text: $store.aiPrompt).accessibilityIdentifier("ai.prompt").font(.system(size: 12)).scrollContentBackground(.hidden).padding(8).frame(height: 110).background(Studio.raised, in: RoundedRectangle(cornerRadius: 7))
                 let sections = store.aiSectionCount
-                Text("Sends your instruction and transcript text to OpenRouter and its model provider. No video or audio is uploaded. Uses your OpenRouter credits · \(sections) request\(sections == 1 ? "" : "s").").font(.system(size: 10)).foregroundStyle(Studio.muted).lineSpacing(3)
+                Text("Sends your instruction and transcript text to \(provider.name)\(provider == .openRouter ? " and its model provider" : ""). No video or audio is uploaded. Uses your \(provider.account) credits · \(sections) request\(sections == 1 ? "" : "s").").font(.system(size: 10)).foregroundStyle(Studio.muted).lineSpacing(3)
                 Button(action: store.requestAI) {
                     Label(store.isThinking ? "Working…" : "Generate suggestions", systemImage: "sparkles").frame(maxWidth: .infinity).padding(.vertical, 5)
-                }.buttonStyle(.primary).disabled(!keySaved || sections == 0 || store.isThinking)
+                }.buttonStyle(.primary).disabled(!store.aiConnected || sections == 0 || store.isThinking)
                 if store.isThinking {
                     ProgressView(); Text(store.aiProgress).font(.system(size: 10)).foregroundStyle(Studio.muted)
                     Button("Cancel") { store.assistantTask?.cancel() }
@@ -76,7 +79,7 @@ struct AIPanel: View {
                     Label("Suggestions are reviewed before you apply them. Every applied edit can be undone.", systemImage: "arrow.uturn.backward").font(.system(size: 11)).foregroundStyle(Studio.muted).padding(.top, 20)
                 }
             }.padding(16)
-        }.accessibilityIdentifier("ai.scroll").onAppear { keySaved = OpenRouterKeychain.read() != nil; configure = !keySaved }
+        }.accessibilityIdentifier("ai.scroll").onAppear { configure = !store.aiConnected }
     }
     private func quick(_ title: String, _ prompt: String) -> some View {
         Button(title) { store.aiPrompt = prompt }.font(.system(size: 10)).buttonStyle(.secondary)

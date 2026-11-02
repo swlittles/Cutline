@@ -63,6 +63,7 @@ struct ReviewStepView: View {
         .onChange(of: store.focusedMoment) { _, _ in store.refreshReviewPreview() }
         .onChange(of: store.project.clipReview) { _, _ in store.refreshReviewPreview() }
         .onChange(of: store.project.autoClipHooks) { _, _ in store.refreshReviewPreview() }
+        .onChange(of: store.project.autoClipSounds) { _, _ in store.refreshReviewPreview() }
         .onChange(of: store.hookFocusRequest) { _, _ in hookFocused = true }
     }
     /// Transcribing and AI picking run alongside the scan; each says what it's doing.
@@ -76,9 +77,9 @@ struct ReviewStepView: View {
             HStack(spacing: 8) {
                 Label(store.aiPickMessage, systemImage: "wand.and.stars").font(.system(size: 12)).foregroundStyle(Studio.muted).lineLimit(1).accessibilityIdentifier("review.aiStatus")
                 if store.aiPicks != nil || store.aiPickMessage.hasPrefix("AI couldn’t") {
-                    Button("Ask again", action: store.repickWithAI).buttonStyle(.accentLink).font(.system(size: 12)).disabled(store.streamTranscript == nil || !store.openRouterConnected).accessibilityIdentifier("review.aiRetry")
+                    Button("Ask again", action: store.repickWithAI).buttonStyle(.accentLink).font(.system(size: 12)).disabled(store.streamTranscript == nil || !store.aiConnected).accessibilityIdentifier("review.aiRetry")
                 }
-                if !store.openRouterConnected { Button("Connect OpenRouter…") { showDetection = true }.buttonStyle(.accentLink).font(.system(size: 12)) }
+                if !store.aiConnected { SettingsButton(title: "Connect AI in Settings…").buttonStyle(.accentLink).font(.system(size: 12)) }
             }
         }
     }
@@ -159,6 +160,28 @@ struct ReviewStepView: View {
         if candidate.evidence.contains(where: { $0.signal == .marker }) { icons.append("flag.fill") }
         return icons
     }
+    /// Sound effects on this short. New ones go where the preview is now.
+    private func momentSounds(_ candidate: AutoClipCandidate) -> some View {
+        HStack(spacing: 8) {
+            Text("Sounds").font(.system(size: 12, weight: .semibold))
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 6) {
+                    let placed = store.momentSounds(candidate.id)
+                    if placed.isEmpty { Text("Pause where a sound should play, then add it.").font(.system(size: 11)).foregroundStyle(Studio.muted) }
+                    ForEach(placed) { sound in
+                        HStack(spacing: 6) {
+                            Button("\(sound.name) · \(clockTime(sound.start))") {
+                                store.reviewPlayer.seek(to: CMTime(seconds: sound.start, preferredTimescale: 600), toleranceBefore: .zero, toleranceAfter: .zero)
+                            }.buttonStyle(.plain).font(.system(size: 11)).help("Jump to this sound")
+                            Button { store.removeMomentSound(candidate.id, sound: sound.id) } label: { Image(systemName: "xmark").font(.system(size: 9, weight: .bold)) }
+                                .buttonStyle(.plain).foregroundStyle(Studio.muted).help("Remove").accessibilityIdentifier("review.sound.remove")
+                        }.padding(.horizontal, 10).frame(height: 24).background(Studio.raised, in: Capsule()).overlay(Capsule().stroke(Studio.line))
+                    }
+                }
+            }
+            SoundMenu(title: "Add at \(clockTime(clock.time))") { store.addSoundToMoment($0) }.foregroundStyle(Studio.accent)
+        }.accessibilityElement(children: .contain).accessibilityIdentifier("review.sounds")
+    }
     @ViewBuilder private var detail: some View {
         if let candidate = store.focusedCandidate, let media = store.clipMedia {
             let shown = store.applied(candidate)
@@ -206,6 +229,7 @@ struct ReviewStepView: View {
                     TextField("e.g. \(store.suggestedHook(candidate))", text: Binding(get: { store.autoClipHook(candidate.id) }, set: { store.setHook(candidate.id, $0) }))
                         .textFieldStyle(.roundedBorder).controlSize(.large).focused($hookFocused).accessibilityIdentifier("review.hook")
                 }
+                momentSounds(candidate)
                 HStack(spacing: 10) {
                     Button { hookFocused = false; store.skipFocused() } label: { Label("Skip", systemImage: "xmark").frame(maxWidth: .infinity) }
                         .buttonStyle(.secondaryLarge).accessibilityIdentifier("review.skip")

@@ -10,15 +10,15 @@ Transcripts store source-media IDs and source timestamps. Editable caption cues 
 
 Reference: [whisper.cpp](https://github.com/ggml-org/whisper.cpp), [model repository](https://huggingface.co/ggerganov/whisper.cpp).
 
-## OpenRouter
+## OpenRouter and the Claude API
 
-The assistant is optional. The app never needs a remote key to transcribe or export. The user saves their OpenRouter key in macOS Keychain and configures a structured-output-capable model. The initial default `google/gemini-2.5-flash` was present in OpenRouter's public model catalog with structured-output support when checked on September 12, 2026.
+The assistant is optional. The app never needs a remote key to transcribe or export. In **Settings → AI** the user chooses OpenRouter or the Claude API, saves that provider's key in macOS Keychain (one entry per provider), and configures a structured-output-capable model per step. `AICall` builds both request shapes: OpenRouter chat completions with `response_format: json_schema`, or Claude Messages (`POST https://api.anthropic.com/v1/messages`, `x-api-key`, `anthropic-version: 2026-10-21`) with `output_config.format` and an effort level, plus `fallbacks: "default"` on models that support it. Claude replies are read from their text blocks; a `refusal` stop reason skips that request without stopping the others. Image and video generation stay on OpenRouter. The initial default `google/gemini-2.5-flash` was present in OpenRouter's public model catalog with structured-output support when checked on September 12, 2026.
 
-Requests go to `https://openrouter.ai/api/v1/chat/completions`. Only the explicit editing instruction, timeline duration, and timestamped caption text/IDs are included. Source files, filesystem paths, the project document, and raw audio/video are not uploaded. The Generate button explains the remote destination, credit use, and number of transcript sections. Long transcripts are split into bounded text requests; highlights are combined and overlapping suggestions deduplicated.
+Requests go to the chosen provider's endpoint. Only the explicit editing instruction, timeline duration, and timestamped caption text/IDs are included. Source files, filesystem paths, the project document, and raw audio/video are not uploaded. The Generate button explains the remote destination, credit use, and number of transcript sections. Long transcripts are split into bounded text requests; highlights are combined and overlapping suggestions deduplicated.
 
 The response schema permits a summary, ranked highlight ranges, title ideas, and caption-text edits. There is no arbitrary code execution or filesystem tool interface. All ranges and caption IDs are validated locally. The UI shows the proposal and applies it only on user action. A project-snapshot check rejects stale suggestions. Apply creates an undo entry; keeping a highlight also clips/rebases audio and overlay layers. Recorded speech is identified as untrusted data in the system instructions.
 
-HTTP authentication, credit, rate-limit, empty-response and malformed-response failures surface as actionable errors. Cancellation cancels the URLSession task. Chat has no automatic retry, provider selection UI, or cost accounting. Image/video generation uses the separate adapters below.
+HTTP authentication, credit, rate-limit, empty-response and malformed-response failures surface as actionable errors. Cancellation cancels the URLSession task. The editing assistant has no automatic retry or cost accounting. Image/video generation uses the separate adapters below.
 
 References: [OpenRouter chat API](https://openrouter.ai/docs/api/api-reference/chat/send-chat-completion-request), [structured outputs](https://openrouter.ai/docs/guides/features/structured-outputs).
 
