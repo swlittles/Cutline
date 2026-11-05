@@ -12,10 +12,16 @@ public enum AIProvider: String, CaseIterable, Codable, Identifiable, Sendable {
     public var keyLabel: String { self == .openRouter ? "OpenRouter API key" : "Claude API key" }
     public var keysURL: URL { URL(string: self == .openRouter ? "https://openrouter.ai/settings/keys" : "https://platform.claude.com/settings/keys")! }
     public var defaultModel: String { self == .openRouter ? EditingAssistant.defaultModel : "claude-opus-5-5" }
-    /// The model a step starts on. Looking at frames sends many images per recording, so on
-    /// Claude it starts on Haiku, about 40 times cheaper than Opus; the other steps start on Opus.
+    /// The model a step starts on. On Claude, looking at frames sends many images per recording, so
+    /// it starts on Haiku, about 40 times cheaper than Opus; titles and hooks start on Sonnet, half
+    /// Opus's price; picking moments and the editing assistant start on Opus.
     public func defaultModel(for step: String) -> String {
-        self == .claude && step == "vision" ? "claude-haiku-5-5" : defaultModel
+        guard self == .claude else { return defaultModel }
+        switch step {
+        case "vision": return "claude-haiku-5-5"
+        case "copy": return "claude-sonnet-5-5"
+        default: return defaultModel
+        }
     }
     public var modelExamples: String { self == .openRouter ? "google/gemini-2.5-flash" : "claude-opus-5-5, claude-sonnet-5-5, claude-haiku-5-5" }
     var endpoint: URL { self == .openRouter ? EditingAssistant.endpoint : URL(string: "https://api.anthropic.com/v1/messages")! }

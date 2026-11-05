@@ -42,7 +42,7 @@ struct AISettingsView: View {
         LabeledContent("Titles and hooks") { modelField($store.clipCopyModel, id: "settings.copyModel") }
         LabeledContent("Looking at frames") { modelField($store.clipVisionModel, id: "settings.visionModel") }
         LabeledContent("Editing assistant") { modelField($store.aiModel, id: "settings.assistantModel") }
-        Text("\(provider.name) models, such as \(provider.modelExamples). Each must support structured output; Looking at frames also needs images.\(provider == .claude ? " Claude thinks before answering, which costs output tokens; claude-sonnet-5-5 and claude-haiku-5-5 cost less than claude-opus-5-5. Looking at frames starts on claude-haiku-5-5 because it sends many images." : "")")
+        Text("\(provider.name) models, such as \(provider.modelExamples). Each must support structured output; Looking at frames also needs images.\(provider == .claude ? " Claude thinks before answering, which costs output tokens; claude-sonnet-5-5 and claude-haiku-5-5 cost less than claude-opus-5-5. Looking at frames starts on claude-haiku-5-5 because it sends many images, and titles and hooks start on claude-sonnet-5-5." : "")")
             .font(.system(size: 11)).foregroundStyle(Studio.muted).fixedSize(horizontal: false, vertical: true)
         Toggle("Let AI pick moments in Clip a stream", isOn: $store.aiFindsMoments)
         Toggle("Write titles and hooks for each pick", isOn: $store.aiPolishesCopy).disabled(!store.aiFindsMoments)
