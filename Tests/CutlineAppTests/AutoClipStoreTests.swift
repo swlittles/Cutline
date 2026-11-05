@@ -284,6 +284,24 @@ extension EditorStoreTests {
         try store.removeAIKey(for: .claude)
         XCTAssertNil(AIKeychain.read(.claude)); XCTAssertEqual(AIKeychain.read(.openRouter), "or-test")
     }
+    func testClaudeLooksAtFramesWithHaikuUnlessAModelWasChosen() {
+        let previous = store.aiProvider, defaults = UserDefaults.standard, key = EditorStore.modelKey("vision", .claude)
+        let saved = defaults.string(forKey: key), migrated = defaults.bool(forKey: EditorStore.visionDefaultMigrationKey)
+        defer {
+            store.aiProvider = previous
+            if let saved { defaults.set(saved, forKey: key) } else { defaults.removeObject(forKey: key) }
+            defaults.set(migrated, forKey: EditorStore.visionDefaultMigrationKey)
+        }
+        // Earlier versions stored Opus when switching providers; it's dropped once.
+        defaults.set("claude-opus-5-5", forKey: key); defaults.set(false, forKey: EditorStore.visionDefaultMigrationKey)
+        XCTAssertEqual(EditorStore.model("vision", .claude), "claude-haiku-5-5")
+        XCTAssertNil(defaults.string(forKey: key))
+        // Switching providers doesn't store the default, and a chosen model, Opus included, sticks.
+        store.aiProvider = .openRouter; store.aiProvider = .claude
+        XCTAssertEqual(store.clipVisionModel, "claude-haiku-5-5"); XCTAssertNil(defaults.string(forKey: key))
+        store.clipVisionModel = "claude-opus-5-5"
+        XCTAssertEqual(EditorStore.model("vision", .claude), "claude-opus-5-5")
+    }
     func testSoundsGoOnTheTimelineAtThePlayhead() {
         seed(); store.playhead = 2
         let sound = SoundEffect(id: "pop/wow.m4a", name: "Wow", category: "pop", url: fixture.appendingPathComponent("music.m4a"), duration: 1)

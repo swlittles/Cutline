@@ -114,6 +114,12 @@ final class ClaudeProviderTests: XCTestCase {
         XCTAssertNotEqual(AIProvider.openRouter.testCredentialFile, AIProvider.claude.testCredentialFile)
         XCTAssertEqual(AIProvider.claude.defaultModel, "claude-opus-5-5")
     }
+
+    func testLookingAtFramesStartsOnHaikuWithClaude() {
+        XCTAssertEqual(AIProvider.claude.defaultModel(for: "vision"), "claude-haiku-5-5")
+        for step in ["picks", "copy", "assistant"] { XCTAssertEqual(AIProvider.claude.defaultModel(for: step), "claude-opus-5-5") }
+        XCTAssertEqual(AIProvider.openRouter.defaultModel(for: "vision"), EditingAssistant.defaultModel)
+    }
 }
 
 final class SoundLibraryTests: XCTestCase {

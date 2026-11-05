@@ -59,13 +59,13 @@ final class EditorStore: ObservableObject {
     @Published var aiConnected = AIKeychain.read(EditorStore.savedProvider) != nil
     /// Each AI step in clip finding has its own model. The editor's AI panel keeps `aiModel`.
     @Published var clipPickModel = EditorStore.model("picks", EditorStore.savedProvider) {
-        didSet { UserDefaults.standard.set(clipPickModel, forKey: Self.modelKey("picks", aiProvider)) }
+        didSet { Self.saveModel(clipPickModel, "picks", aiProvider) }
     }
     @Published var clipCopyModel = EditorStore.model("copy", EditorStore.savedProvider) {
-        didSet { UserDefaults.standard.set(clipCopyModel, forKey: Self.modelKey("copy", aiProvider)) }
+        didSet { Self.saveModel(clipCopyModel, "copy", aiProvider) }
     }
     @Published var clipVisionModel = EditorStore.model("vision", EditorStore.savedProvider) {
-        didSet { UserDefaults.standard.set(clipVisionModel, forKey: Self.modelKey("vision", aiProvider)) }
+        didSet { Self.saveModel(clipVisionModel, "vision", aiProvider) }
     }
     @Published var aiPolishesCopy = UserDefaults.standard.object(forKey: "clip-ai-copy") as? Bool ?? true {
         didSet { UserDefaults.standard.set(aiPolishesCopy, forKey: "clip-ai-copy") }
@@ -115,7 +115,7 @@ final class EditorStore: ObservableObject {
     @Published var aiProgress = ""
     @Published var aiProposal: AIEditProposal?
     @Published var aiModel = EditorStore.model("assistant", EditorStore.savedProvider) {
-        didSet { UserDefaults.standard.set(aiModel, forKey: Self.modelKey("assistant", aiProvider)) }
+        didSet { Self.saveModel(aiModel, "assistant", aiProvider) }
     }
     @Published var aiPrompt = "Find the best gaming highlights for short clips. Include the setup and reaction, and suggest engaging titles."
     @Published var isGenerating = false
