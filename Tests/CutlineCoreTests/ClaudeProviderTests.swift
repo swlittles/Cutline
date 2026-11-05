@@ -117,8 +117,9 @@ final class ClaudeProviderTests: XCTestCase {
 
     func testLookingAtFramesStartsOnHaikuWithClaude() {
         XCTAssertEqual(AIProvider.claude.defaultModel(for: "vision"), "claude-haiku-5-5")
-        for step in ["picks", "copy", "assistant"] { XCTAssertEqual(AIProvider.claude.defaultModel(for: step), "claude-opus-5-5") }
-        XCTAssertEqual(AIProvider.openRouter.defaultModel(for: "vision"), EditingAssistant.defaultModel)
+        XCTAssertEqual(AIProvider.claude.defaultModel(for: "copy"), "claude-sonnet-5-5")
+        for step in ["picks", "assistant"] { XCTAssertEqual(AIProvider.claude.defaultModel(for: step), "claude-opus-5-5") }
+        for step in ["vision", "copy"] { XCTAssertEqual(AIProvider.openRouter.defaultModel(for: step), EditingAssistant.defaultModel) }
     }
 }
 

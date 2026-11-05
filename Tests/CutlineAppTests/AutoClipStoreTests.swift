@@ -302,6 +302,23 @@ extension EditorStoreTests {
         store.clipVisionModel = "claude-opus-5-5"
         XCTAssertEqual(EditorStore.model("vision", .claude), "claude-opus-5-5")
     }
+    func testClaudeWritesTitlesWithSonnetUnlessAModelWasChosen() {
+        let previous = store.aiProvider, defaults = UserDefaults.standard, key = EditorStore.modelKey("copy", .claude)
+        let saved = defaults.string(forKey: key), migrated = defaults.bool(forKey: EditorStore.copyDefaultMigrationKey)
+        defer {
+            store.aiProvider = previous
+            if let saved { defaults.set(saved, forKey: key) } else { defaults.removeObject(forKey: key) }
+            defaults.set(migrated, forKey: EditorStore.copyDefaultMigrationKey)
+        }
+        // A stored Opus from earlier versions is dropped once; a model chosen afterwards sticks.
+        defaults.set("claude-opus-5-5", forKey: key); defaults.set(false, forKey: EditorStore.copyDefaultMigrationKey)
+        XCTAssertEqual(EditorStore.model("copy", .claude), "claude-sonnet-5-5")
+        XCTAssertNil(defaults.string(forKey: key))
+        store.aiProvider = .openRouter; store.aiProvider = .claude
+        XCTAssertEqual(store.clipCopyModel, "claude-sonnet-5-5"); XCTAssertNil(defaults.string(forKey: key))
+        store.clipCopyModel = "claude-opus-5-5"
+        XCTAssertEqual(EditorStore.model("copy", .claude), "claude-opus-5-5")
+    }
     func testSoundsGoOnTheTimelineAtThePlayhead() {
         seed(); store.playhead = 2
         let sound = SoundEffect(id: "pop/wow.m4a", name: "Wow", category: "pop", url: fixture.appendingPathComponent("music.m4a"), duration: 1)

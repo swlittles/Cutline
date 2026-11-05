@@ -179,7 +179,7 @@ extension EditorStore {
         }
     }
     static func model(_ step: String, _ provider: AIProvider) -> String {
-        forgetOldVisionDefault()
+        forgetOldDefaults()
         return UserDefaults.standard.string(forKey: modelKey(step, provider)).flatMap { $0.trimmingCharacters(in: .whitespaces).isEmpty ? nil : $0 }
             ?? provider.defaultModel(for: step)
     }
@@ -191,13 +191,16 @@ extension EditorStore {
         else { UserDefaults.standard.set(value, forKey: key) }
     }
     static let visionDefaultMigrationKey = "claude-model-vision-default-haiku"
-    /// Before 0.7.1 Claude looked at frames with Opus by default, and switching providers stored that
-    /// default as if it had been chosen. Drop a stored Opus once so frames move to Haiku.
-    static func forgetOldVisionDefault() {
+    static let copyDefaultMigrationKey = "claude-model-copy-default-sonnet"
+    /// Claude used Opus for every step by default before 0.7.1 (frames) and 0.7.2 (titles and hooks),
+    /// and switching providers stored that default as if it had been chosen. Drop a stored Opus once
+    /// per step so those steps move to their new defaults.
+    static func forgetOldDefaults() {
         let defaults = UserDefaults.standard
-        guard !defaults.bool(forKey: visionDefaultMigrationKey) else { return }
-        let key = modelKey("vision", .claude)
-        if defaults.string(forKey: key)?.trimmingCharacters(in: .whitespaces) == "claude-opus-5-5" { defaults.removeObject(forKey: key) }
-        defaults.set(true, forKey: visionDefaultMigrationKey)
+        for (step, flag) in [("vision", visionDefaultMigrationKey), ("copy", copyDefaultMigrationKey)] where !defaults.bool(forKey: flag) {
+            let key = modelKey(step, .claude)
+            if defaults.string(forKey: key)?.trimmingCharacters(in: .whitespaces) == "claude-opus-5-5" { defaults.removeObject(forKey: key) }
+            defaults.set(true, forKey: flag)
+        }
     }
 }
