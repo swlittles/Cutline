@@ -179,6 +179,25 @@ extension EditorStore {
         }
     }
     static func model(_ step: String, _ provider: AIProvider) -> String {
-        UserDefaults.standard.string(forKey: modelKey(step, provider)).flatMap { $0.trimmingCharacters(in: .whitespaces).isEmpty ? nil : $0 } ?? provider.defaultModel
+        forgetOldVisionDefault()
+        return UserDefaults.standard.string(forKey: modelKey(step, provider)).flatMap { $0.trimmingCharacters(in: .whitespaces).isEmpty ? nil : $0 }
+            ?? provider.defaultModel(for: step)
+    }
+    /// Only a model the person chose is stored, so a step keeps following the default when that
+    /// changes. Switching providers assigns each step's model, which used to store the default too.
+    static func saveModel(_ value: String, _ step: String, _ provider: AIProvider) {
+        let key = modelKey(step, provider), trimmed = value.trimmingCharacters(in: .whitespaces)
+        if trimmed.isEmpty || trimmed == provider.defaultModel(for: step) { UserDefaults.standard.removeObject(forKey: key) }
+        else { UserDefaults.standard.set(value, forKey: key) }
+    }
+    static let visionDefaultMigrationKey = "claude-model-vision-default-haiku"
+    /// Before 0.7.1 Claude looked at frames with Opus by default, and switching providers stored that
+    /// default as if it had been chosen. Drop a stored Opus once so frames move to Haiku.
+    static func forgetOldVisionDefault() {
+        let defaults = UserDefaults.standard
+        guard !defaults.bool(forKey: visionDefaultMigrationKey) else { return }
+        let key = modelKey("vision", .claude)
+        if defaults.string(forKey: key)?.trimmingCharacters(in: .whitespaces) == "claude-opus-5-5" { defaults.removeObject(forKey: key) }
+        defaults.set(true, forKey: visionDefaultMigrationKey)
     }
 }
